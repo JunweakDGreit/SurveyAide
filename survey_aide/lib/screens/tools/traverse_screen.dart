@@ -55,7 +55,9 @@ class _NeLeg {
 }
 
 class TraverseScreen extends StatefulWidget {
-  const TraverseScreen({super.key});
+  final Map<String, dynamic>? initialData;
+
+  const TraverseScreen({super.key, this.initialData});
 
   @override
   State<TraverseScreen> createState() => _TraverseScreenState();
@@ -94,8 +96,13 @@ class _TraverseScreenState extends State<TraverseScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFromStorage();
-    _addPoint();
+    if (widget.initialData != null) {
+      _loadFromData(widget.initialData!);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _compute());
+    } else {
+      _loadFromStorage();
+      if (_points.isEmpty) _addPoint();
+    }
   }
 
   @override
@@ -376,6 +383,25 @@ class _TraverseScreenState extends State<TraverseScreen> {
       'perimeter': area?.perimeterM,
       'legs': result?.legs.length,
       'status': result?.status ?? 'N/E',
+      // Input data for repopulation
+      'hasTiePoint': _hasTiePoint,
+      'tieQuadrant': _tieQuadrant?.name,
+      'tieBearingDeg': _tieBearingDeg,
+      'tieBearingMin': _tieBearingMin,
+      'tieBearingSec': _tieBearingSec,
+      'tieDistance': _tieDistance,
+      'startN': _startNCtrl.text,
+      'startE': _startECtrl.text,
+      'points': _points.map((p) => {
+        'id': p.id,
+        'northing': p.northing,
+        'easting': p.easting,
+        'quadrant': p.quadrant?.name,
+        'bearingDeg': p.bearingDeg,
+        'bearingMin': p.bearingMin,
+        'bearingSec': p.bearingSec,
+        'distance': p.distance,
+      }).toList(),
     });
 
     final trimmed = list.take(20).toList();
@@ -444,45 +470,50 @@ class _TraverseScreenState extends State<TraverseScreen> {
     if (mounted) showToast(context, 'Traverse saved');
   }
 
+  void _loadFromData(Map<String, dynamic> data) {
+    _traverseNameCtrl.text = data['name'] as String? ?? '';
+    _mode = _InputMode.values.firstWhere(
+        (e) => e.name == data['mode'], orElse: () => _InputMode.bd);
+    _hasTiePoint = data['hasTiePoint'] as bool? ?? false;
+    _tieQuadrant = data['tieQuadrant'] != null
+        ? Quadrant.values.byName(data['tieQuadrant'] as String)
+        : null;
+    _tieBearingDeg = data['tieBearingDeg'] as int? ?? 0;
+    _tieBearingMin = data['tieBearingMin'] as int? ?? 0;
+    _tieBearingSec = (data['tieBearingSec'] as num?)?.toDouble() ?? 0.0;
+    _tieDistance = (data['tieDistance'] as num?)?.toDouble();
+    _startNCtrl.text = data['startN'] as String? ?? '';
+    _startECtrl.text = data['startE'] as String? ?? '';
+    final points = data['points'] as List? ?? [];
+    _points.clear();
+    _nextId = 1;
+    for (final p in points) {
+      final pm = p as Map<String, dynamic>;
+      _points.add(_PointEntry(
+        id: pm['id'] as int,
+        northing: (pm['northing'] as num?)?.toDouble(),
+        easting: (pm['easting'] as num?)?.toDouble(),
+        quadrant: pm['quadrant'] != null
+            ? Quadrant.values.byName(pm['quadrant'] as String)
+            : null,
+        bearingDeg: pm['bearingDeg'] as int? ?? 0,
+        bearingMin: pm['bearingMin'] as int? ?? 0,
+        bearingSec: (pm['bearingSec'] as num?)?.toDouble() ?? 0.0,
+        distance: (pm['distance'] as num?)?.toDouble(),
+      ));
+      if (pm['id'] as int >= _nextId) {
+        _nextId = (pm['id'] as int) + 1;
+      }
+    }
+    if (_points.isEmpty) _addPoint();
+  }
+
   Future<void> _loadFromStorage() async {
     final jsonStr = StorageService().getString(_storageKey);
     if (jsonStr.isEmpty) return;
     try {
       final data = json.decode(jsonStr) as Map<String, dynamic>;
-      _traverseNameCtrl.text = data['name'] as String? ?? '';
-      _mode = _InputMode.values.firstWhere(
-          (e) => e.name == data['mode'], orElse: () => _InputMode.bd);
-      _hasTiePoint = data['hasTiePoint'] as bool? ?? false;
-      _tieQuadrant = data['tieQuadrant'] != null
-          ? Quadrant.values.byName(data['tieQuadrant'] as String)
-          : null;
-      _tieBearingDeg = data['tieBearingDeg'] as int? ?? 0;
-      _tieBearingMin = data['tieBearingMin'] as int? ?? 0;
-      _tieBearingSec = (data['tieBearingSec'] as num?)?.toDouble() ?? 0.0;
-      _tieDistance = (data['tieDistance'] as num?)?.toDouble();
-      _startNCtrl.text = data['startN'] as String? ?? '';
-      _startECtrl.text = data['startE'] as String? ?? '';
-      final points = data['points'] as List? ?? [];
-      _points.clear();
-      for (final p in points) {
-        final pm = p as Map<String, dynamic>;
-        _points.add(_PointEntry(
-          id: pm['id'] as int,
-          northing: (pm['northing'] as num?)?.toDouble(),
-          easting: (pm['easting'] as num?)?.toDouble(),
-          quadrant: pm['quadrant'] != null
-              ? Quadrant.values.byName(pm['quadrant'] as String)
-              : null,
-          bearingDeg: pm['bearingDeg'] as int? ?? 0,
-          bearingMin: pm['bearingMin'] as int? ?? 0,
-          bearingSec: (pm['bearingSec'] as num?)?.toDouble() ?? 0.0,
-          distance: (pm['distance'] as num?)?.toDouble(),
-        ));
-        if (pm['id'] as int >= _nextId) {
-          _nextId = (pm['id'] as int) + 1;
-        }
-      }
-      if (_points.isEmpty) _addPoint();
+      _loadFromData(data);
     } catch (_) {
       if (_points.isEmpty) _addPoint();
     }
