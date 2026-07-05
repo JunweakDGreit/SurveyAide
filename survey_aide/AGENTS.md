@@ -39,13 +39,23 @@ Emulator scripts: `./run_emulator.ps1` (Windows) or `./run_emulator.sh` (Unix). 
 - **Region selection**: User picks region from `reference.db` `Regions` table during setup. Stored as `gep_admin_region` in SharedPrefs. No hardcoded region enum.
 - **Theming**: 6 presets (Classic, Catppuccin, Rosé Pine, Dracula, Nord, Tokyo Night) with light/dark, defined in `lib/core/theme_presets.dart`.
 
+## Git remotes
+
+| Remote | URL | Purpose |
+|---|---|---|
+| `origin` | `https://github.com/JunweakDGreit/SurveyAide.git` | Push/commit destination |
+| `enrd` | `https://github.com/JunweakDGreit/ENRD_Database.git` | Upstream (do not push) |
+
+**Always push to `origin`**: `git push origin main`
+
 ## Screen structure
 
-3-page app via horizontal PageView swipe in `home_screen.dart`:
+4-page app via horizontal PageView swipe in `home_screen.dart`:
 
+0. **Dashboard** (Page 0): Stat cards (services, income, expenses, net, schedules) + insights
 1. **Calculator** (Page 1): ShellRoute child — 4 bottom-nav tabs: Home, Search, Payment, Schedule
 2. **Tools** (Page 2): Traverse computation, coordinate tools (with own Home/History sub-tabs)
-3. **Survey Returns** (Page 3): DENR checklist (placeholder)
+3. **Survey Returns** (Page 3): DENR checklist — **Easter Egg** (hidden by default, unlocked via Settings → About → 10-tap card, confetti burst animation)
 
 ## Codegen requirements
 
@@ -61,6 +71,7 @@ Commit all `.g.dart` files alongside the source changes.
 
 - Light transparency design: `glassDecoration()`, `glassInputDecoration()`, `glassBackdrop()` in `lib/core/constants.dart` — subtle translucent overlays instead of heavy glassmorphism
 - SharedPrefs persistence keys: `gep_admin_region`, `gep_swipe_hint_shown`, `gep_tools_tab`, `gep_traverse_history`
-- No CI workflow in repo
+- **Provider count**: 20+ providers (including business, invoice, dashboard, expense, layout)
+- **Push reminder**: always `git push origin main` — never push to `enrd`
 - Only 1 test (`test/widget_test.dart`)
 - DB file: `ge_tariff.sqlite` in app documents directory
