@@ -16,6 +16,7 @@ class _InstallmentFormState extends State<InstallmentForm> {
   late final TextEditingController _pctCtrl;
   late DateTime? _dueDate;
   late bool _paid;
+  late bool _isFixed;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -23,6 +24,7 @@ class _InstallmentFormState extends State<InstallmentForm> {
     super.initState();
     final inst = widget.installment;
     _labelCtrl = TextEditingController(text: inst?.label ?? '');
+    _isFixed = inst?.isFixed ?? false;
     _pctCtrl = TextEditingController(text: inst?.pct.toString() ?? '');
     _dueDate = inst?.dueDate;
     _paid = inst?.paid ?? false;
@@ -50,12 +52,14 @@ class _InstallmentFormState extends State<InstallmentForm> {
 
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final pct = double.tryParse(_pctCtrl.text) ?? 0;
-    if (pct <= 0 || pct > 100) return;
+    final value = double.tryParse(_pctCtrl.text) ?? 0;
+    if (value <= 0) return;
+    if (!_isFixed && value > 100) return;
 
     final result = Installment(
       label: _labelCtrl.text.trim(),
-      pct: pct,
+      pct: value,
+      isFixed: _isFixed,
       dueDate: _dueDate,
       paid: _paid,
     );
@@ -78,7 +82,7 @@ class _InstallmentFormState extends State<InstallmentForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(isEdit ? 'Edit Installment' : 'Add Installment', style: theme.textTheme.titleLarge),
+              Text(isEdit ? 'Edit Payment' : 'Add Payment', style: theme.textTheme.titleLarge),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _labelCtrl,
@@ -87,14 +91,34 @@ class _InstallmentFormState extends State<InstallmentForm> {
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Label is required' : null,
               ),
               const SizedBox(height: 16),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Percentage'), icon: Icon(Icons.percent, size: 16)),
+                  ButtonSegment(value: true, label: Text('Amount'), icon: Icon(Icons.attach_money, size: 16)),
+                ],
+                selected: {_isFixed},
+                onSelectionChanged: (v) => setState(() => _isFixed = v.first),
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: WidgetStatePropertyAll(theme.textTheme.labelMedium),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _pctCtrl,
-                decoration: glassInputDecoration(context, labelText: 'Percentage (%)', hintText: 'e.g. 50', suffixText: '%'),
+                decoration: glassInputDecoration(
+                  context,
+                  labelText: _isFixed ? 'Amount' : 'Percentage',
+                  hintText: _isFixed ? 'e.g. 5000' : 'e.g. 50',
+                  prefixText: _isFixed ? '₱' : null,
+                  suffixText: _isFixed ? null : '%',
+                ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Percentage is required';
+                  if (v == null || v.trim().isEmpty) return _isFixed ? 'Amount is required' : 'Percentage is required';
                   final val = double.tryParse(v);
-                  if (val == null || val <= 0 || val > 100) return 'Enter a value between 1 and 100';
+                  if (val == null || val <= 0) return 'Enter a positive value';
+                  if (!_isFixed && val > 100) return 'Enter a value between 1 and 100';
                   return null;
                 },
               ),

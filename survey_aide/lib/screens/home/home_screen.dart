@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
+import '../../providers/uiprovider.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/bottom_nav_bar.dart';
-import '../settings/settings_sheet.dart';
+import '../dashboard/dashboard_view.dart';
 import '../tools/tools_page.dart';
 import '../survey_returns/survey_returns_page.dart';
 
@@ -17,14 +18,25 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late PageController _pageController;
+  late AnimationController _navAnimController;
   bool _showHint = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _pageController.addListener(() {
+      final idx = _pageController.page?.round() ?? 0;
+      ref.read(pageViewIndexProvider.notifier).state = idx;
+    });
+    _navAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: 1.0,
+    );
     _checkHint();
   }
 
@@ -42,17 +54,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _navAnimController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final settingsOpen = ref.watch(settingsSheetOpenProvider);
+    final modalCount = ref.watch(modalCountProvider);
+    final surveyReturnsVisible = ref.watch(surveyReturnsVisibleProvider);
+
+    ref.listen(surveyReturnsVisibleProvider, (prev, next) {
+      if (!next && prev == true) {
+        final currentPage = _pageController.page?.round() ?? 0;
+        if (currentPage > 2) {
+          _pageController.jumpToPage(2);
+        }
+      }
+    });
+
+    ref.listen(navBarScrollHiddenProvider, (_, next) {
+      if (next) {
+        _navAnimController.reverse();
+      } else {
+        _navAnimController.forward();
+      }
+    });
 
     return Stack(
       children: [
-        ScrollConfiguration(
-          behavior: MaterialScrollBehavior().copyWith(
+        Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: ScrollConfiguration(
+          behavior: const MaterialScrollBehavior().copyWith(
             dragDevices: {
               PointerDeviceKind.touch,
               PointerDeviceKind.mouse,
@@ -64,14 +97,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             controller: _pageController,
             physics: const PageScrollPhysics(),
             children: [
-              Scaffold(
-                body: widget.child,
-                bottomNavigationBar: settingsOpen ? null : const BottomNavBar(),
+              const DashboardView(),
+              Stack(
+                children: [
+                  widget.child,
+                  if (modalCount == 0)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: BottomNavBar(controller: _navAnimController),
+                    ),
+                ],
               ),
               const ToolsPage(),
-              const SurveyReturnsPage(),
+              if (surveyReturnsVisible) const SurveyReturnsPage(),
             ],
           ),
+        ),
         ),
         _buildHint(),
       ],

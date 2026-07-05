@@ -5,11 +5,13 @@ import '../../services/storage_service.dart';
 class ClientDialog extends StatefulWidget {
   final String? initialName;
   final String? initialLocation;
+  final String? initialBillingAddress;
 
   const ClientDialog({
     super.key,
     this.initialName,
     this.initialLocation,
+    this.initialBillingAddress,
   });
 
   @override
@@ -19,6 +21,7 @@ class ClientDialog extends StatefulWidget {
 class _ClientDialogState extends State<ClientDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _locCtrl;
+  late final TextEditingController _billCtrl;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -26,14 +29,17 @@ class _ClientDialogState extends State<ClientDialog> {
     super.initState();
     final lastName = widget.initialName ?? StorageService().getString('gep_last_client_name');
     final lastLoc = widget.initialLocation ?? StorageService().getString('gep_last_client_location');
+    final lastBill = widget.initialBillingAddress ?? StorageService().getString('gep_last_client_billing');
     _nameCtrl = TextEditingController(text: lastName);
     _locCtrl = TextEditingController(text: lastLoc);
+    _billCtrl = TextEditingController(text: lastBill);
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _locCtrl.dispose();
+    _billCtrl.dispose();
     super.dispose();
   }
 
@@ -41,10 +47,12 @@ class _ClientDialogState extends State<ClientDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final name = _nameCtrl.text.trim();
     final location = _locCtrl.text.trim();
+    final billingAddress = _billCtrl.text.trim();
     if (name.isEmpty) return;
     StorageService().setString('gep_last_client_name', name);
     StorageService().setString('gep_last_client_location', location);
-    Navigator.of(context).pop((name: name, location: location));
+    StorageService().setString('gep_last_client_billing', billingAddress);
+    Navigator.of(context).pop((name: name, location: location, billingAddress: billingAddress));
   }
 
   @override
@@ -78,6 +86,13 @@ class _ClientDialogState extends State<ClientDialog> {
                 controller: _locCtrl,
                 decoration: glassInputDecoration(context, labelText: 'Location (optional)', hintText: 'e.g. Brgy. 1, City'),
                 textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _billCtrl,
+                decoration: glassInputDecoration(context, labelText: 'Billing Address (optional)', hintText: 'e.g. 123 Rizal St., Brgy. 2, Manila'),
+                textCapitalization: TextCapitalization.words,
+                maxLines: 2,
               ),
               const SizedBox(height: 24),
               Row(

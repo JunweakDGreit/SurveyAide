@@ -19,8 +19,8 @@ class RateNotifier extends StateNotifier<Map<String, Map<String, double>>> {
     state = map;
   }
 
-  double getRate(Map<String, double> defaultRates, String code, String key) {
-    return state[code]?[key] ?? defaultRates[key] ?? 0;
+  double getRate(Map<String, double> baseRates, String code, String key) {
+    return state[code]?[key] ?? baseRates[key] ?? 0;
   }
 
   Future<void> setRate(String code, String key, double value) async {

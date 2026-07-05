@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 
 class PressScale extends StatefulWidget {
   final Widget child;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final double scale;
+  final bool bounce;
   const PressScale({
     super.key,
     required this.child,
-    required this.onTap,
+    this.onTap,
     this.scale = 0.92,
+    this.bounce = false,
   });
 
   @override
@@ -24,13 +26,13 @@ class _PressScaleState extends State<PressScale> {
       onTapDown: (_) => setState(() => _scale = widget.scale),
       onTapUp: (_) {
         setState(() => _scale = 1.0);
-        widget.onTap();
+        widget.onTap?.call();
       },
       onTapCancel: () => setState(() => _scale = 1.0),
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        duration: Duration(milliseconds: widget.bounce ? 400 : 100),
+        curve: widget.bounce ? Curves.elasticOut : Curves.easeOut,
         child: widget.child,
       ),
     );

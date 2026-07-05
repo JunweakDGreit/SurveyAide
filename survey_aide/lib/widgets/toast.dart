@@ -22,7 +22,7 @@ void showToast(
       duration: duration,
       backgroundColor: AppTheme.marker,
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       action: actionLabel != null
           ? SnackBarAction(

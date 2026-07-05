@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
+import '../../providers/layout_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../core/theme_presets.dart';
 import '../../services/storage_service.dart';
 
-class SurveyReturnsPage extends StatefulWidget {
+class SurveyReturnsPage extends ConsumerStatefulWidget {
   const SurveyReturnsPage({super.key});
 
   @override
-  State<SurveyReturnsPage> createState() => _SurveyReturnsPageState();
+  ConsumerState<SurveyReturnsPage> createState() => _SurveyReturnsPageState();
 }
 
-class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
+class _SurveyReturnsPageState extends ConsumerState<SurveyReturnsPage> {
   int _tab = 0;
-  bool _gridMode = false;
 
   @override
   void initState() {
@@ -21,41 +24,75 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
         : StorageService().getString('gep_survey_returns_tab', def: '0') == '2'
             ? 2
             : 0;
-    _gridMode = StorageService().getBool('gep_survey_returns_grid_mode', def: false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final preset = ref.watch(themeProvider).preset;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final presetColors = isDark ? preset.dark() : preset.light();
     return Scaffold(
-      body: SafeArea(child: _buildBody()),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: glassBackdrop(
-          context,
-          radius: 24,
-          child: BottomNavigationBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            currentIndex: _tab,
-            onTap: (i) => setState(() {
-              _tab = i;
-              StorageService().setString('gep_survey_returns_tab', i.toString());
-            }),
-            items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.checklist_outlined), activeIcon: Icon(Icons.checklist), label: 'Checklist'),
-            BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Reports'),
-            BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
-          ],
+      body: Stack(
+        children: [
+          SafeArea(child: _buildBody()),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: glassBackdrop(
+                context,
+                radius: 24,
+                background: presetColors.cardColor,
+                child: BottomNavigationBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  currentIndex: _tab,
+                  onTap: (i) => setState(() {
+                    _tab = i;
+                    StorageService().setString('gep_survey_returns_tab', i.toString());
+                  }),
+                  items: const [
+                    BottomNavigationBarItem(icon: Icon(Icons.checklist_outlined), activeIcon: Icon(Icons.checklist), label: 'Checklist'),
+                    BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Reports'),
+                    BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildBody() {
-    if (_tab == 1) return _buildReportsPlaceholder();
-    if (_tab == 2) return _buildHistoryPlaceholder();
-    return _buildChecklist();
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.04),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey('returns_tab_$_tab'),
+        child: switch (_tab) {
+          1 => _buildReportsPlaceholder(),
+          2 => _buildHistoryPlaceholder(),
+          _ => _buildChecklist(),
+        },
+      ),
+    );
   }
 
   Widget _buildChecklist() {
@@ -76,20 +113,12 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
     final progress = items.isEmpty ? 0.0 : completed / items.length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 64),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
             Expanded(child: Text('DENR Survey Returns', style: Theme.of(context).textTheme.headlineSmall)),
-            IconButton(
-              icon: Icon(_gridMode ? Icons.view_list_outlined : Icons.grid_view_outlined),
-              tooltip: _gridMode ? 'List view' : 'Grid view',
-              onPressed: () => setState(() {
-                _gridMode = !_gridMode;
-                StorageService().setBool('gep_survey_returns_grid_mode', _gridMode);
-              }),
-            ),
           ]),
           const SizedBox(height: 4),
           ClipRRect(
@@ -100,7 +129,27 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
           Text('$completed / ${items.length} requirements completed', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
           const SizedBox(height: 12),
           Expanded(
-            child: _gridMode ? _buildGrid(items) : _buildList(items),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.04),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey('returns_grid_${ref.watch(gridModeProvider)}'),
+                child: ref.watch(gridModeProvider) ? _buildGrid(items) : _buildList(items),
+              ),
+            ),
           ),
         ],
       ),
@@ -115,10 +164,10 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
       itemBuilder: (_, i) {
         final item = items[i];
         return Card(
-          elevation: 0,
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -168,10 +217,10 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
       itemBuilder: (_, i) {
         final item = items[i];
         return Card(
-          elevation: 0,
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -215,7 +264,7 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
   Widget _buildReportsPlaceholder() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: _gridMode ? _buildReportsGrid() : _buildReportsList(),
+      child: ref.watch(gridModeProvider) ? _buildReportsGrid() : _buildReportsList(),
     );
   }
 
@@ -263,8 +312,9 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
       itemBuilder: (_, index) {
         final item = reports[index];
         return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6))),
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {},
@@ -301,7 +351,7 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
   Widget _buildHistoryPlaceholder() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: _gridMode ? _buildHistoryGrid() : _buildHistoryList(),
+      child: ref.watch(gridModeProvider) ? _buildHistoryGrid() : _buildHistoryList(),
     );
   }
 
@@ -349,8 +399,9 @@ class _SurveyReturnsPageState extends State<SurveyReturnsPage> {
       itemBuilder: (_, index) {
         final item = history[index];
         return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6))),
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {},

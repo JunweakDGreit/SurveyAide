@@ -92,9 +92,12 @@ class _AppointmentFormState extends State<AppointmentForm> {
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
                   decoration: glassInputDecoration(context, labelText: 'Date', suffixIcon: const Icon(Icons.calendar_today, size: 18, color: AppTheme.brass)),
-                  child: Text(
-                    _date.toLocal().toString().split(' ')[0],
-                    style: const TextStyle(color: AppTheme.ink),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      _date.toLocal().toString().split(' ')[0],
+                      style: TextStyle(color: theme.colorScheme.onSurface),
+                    ),
                   ),
                 ),
               ),

@@ -42,11 +42,11 @@ class Appointment {
   };
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
-    title: json['title'] as String,
-    date: DateTime.parse(json['date'] as String),
-    note: json['note'] as String? ?? '',
-    itemUid: json['itemUid'] as String?,
-    serviceLabel: json['serviceLabel'] as String?,
+    title: (json['title'] as String?) ?? '',
+    date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+    note: (json['note'] as String?) ?? '',
+    itemUid: (json['itemUid'] as String?),
+    serviceLabel: (json['serviceLabel'] as String?),
   );
 }
 

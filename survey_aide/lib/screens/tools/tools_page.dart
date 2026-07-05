@@ -1,26 +1,29 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:animations/animations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../services/storage_service.dart';
+import '../../widgets/confirm_dialog.dart';
+import '../../providers/layout_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../core/theme_presets.dart';
 import 'traverse_screen.dart';
 
-class ToolsPage extends StatefulWidget {
+class ToolsPage extends ConsumerStatefulWidget {
   const ToolsPage({super.key});
 
   @override
-  State<ToolsPage> createState() => _ToolsPageState();
+  ConsumerState<ToolsPage> createState() => _ToolsPageState();
 }
 
-class _ToolsPageState extends State<ToolsPage> {
+class _ToolsPageState extends ConsumerState<ToolsPage> {
   int _tab = 0;
-  bool _gridMode = true;
 
   @override
   void initState() {
     super.initState();
     _tab = int.tryParse(StorageService().getString('gep_tools_tab', def: '0')) ?? 0;
-    _gridMode = StorageService().getBool('gep_tools_grid_mode', def: true);
   }
 
   List<_ToolItem> get _tools => const [
@@ -30,52 +33,56 @@ class _ToolsPageState extends State<ToolsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final preset = ref.watch(themeProvider).preset;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final presetColors = isDark ? preset.dark() : preset.light();
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.home_outlined),
-          tooltip: 'Go to Calculator',
-          onPressed: () => context.go('/'),
-        ),
         title: const Text('Survey Tools'),
-        actions: _tab == 0
-            ? [
-                IconButton(
-                  icon: Icon(_gridMode ? Icons.view_list_outlined : Icons.grid_view_outlined),
-                  tooltip: _gridMode ? 'List view' : 'Grid view',
-                  onPressed: () => setState(() {
-                    _gridMode = !_gridMode;
-                    StorageService().setBool('gep_tools_grid_mode', _gridMode);
-                  }),
-                ),
-              ]
-            : [],
       ),
-      body: switch (_tab) {
-        1 => _buildHistory(),
-        2 => _buildSaved(),
-        _ => _buildToolsGrid(),
-      },
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: glassBackdrop(
-          context,
-          radius: 24,
-          child: BottomNavigationBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            currentIndex: _tab,
-            onTap: (i) => setState(() {
-              _tab = i;
-              StorageService().setString('gep_tools_tab', i.toString());
-            }),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.build_outlined), activeIcon: Icon(Icons.build), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
-              BottomNavigationBarItem(icon: Icon(Icons.folder_outlined), activeIcon: Icon(Icons.folder), label: 'Saved'),
-            ],
+      body: Stack(
+        children: [
+          PageTransitionSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, animation, secondaryAnimation) {
+              return FadeThroughTransition(
+                animation: animation,
+                secondaryAnimation: secondaryAnimation,
+                child: child,
+              );
+            },
+            child: switch (_tab) {
+              1 => _buildHistory(),
+              _ => _buildToolsGrid(),
+            },
           ),
-        ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: glassBackdrop(
+                context,
+                radius: 24,
+                background: presetColors.cardColor,
+                child: BottomNavigationBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  currentIndex: _tab,
+                  onTap: (i) => setState(() {
+                    _tab = i;
+                    StorageService().setString('gep_tools_tab', i.toString());
+                  }),
+                  items: const [
+                    BottomNavigationBarItem(icon: Icon(Icons.build_outlined), activeIcon: Icon(Icons.build), label: 'Home'),
+                    BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -83,7 +90,7 @@ class _ToolsPageState extends State<ToolsPage> {
   Widget _buildToolsGrid() {
     final tools = _tools;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 64),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -91,24 +98,44 @@ class _ToolsPageState extends State<ToolsPage> {
           Text('Select a tool', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
           const SizedBox(height: 12),
           Expanded(
-            child: _gridMode
-                ? GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.85,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemCount: tools.length,
-                    itemBuilder: (_, i) => _ToolCard(tool: tools[i]),
-                  )
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: tools.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _ToolListTile(tool: tools[i]),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.04),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
                   ),
-          ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey('tools_${ref.watch(gridModeProvider)}'),
+                child: ref.watch(gridModeProvider)
+                    ? GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.85,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                        itemCount: tools.length,
+                        itemBuilder: (_, i) => _ToolCard(tool: tools[i]),
+                      )
+                    : ListView.separated(
+                        padding: EdgeInsets.zero,
+                        itemCount: tools.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) => _ToolListTile(tool: tools[i]),
+                      ),
+              ),
+            ),
+            ),
         ],
       ),
     );
@@ -132,7 +159,7 @@ class _ToolsPageState extends State<ToolsPage> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
       itemCount: history.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) => _buildHistoryCard(history[i], i),
@@ -144,134 +171,93 @@ class _ToolsPageState extends State<ToolsPage> {
     final name = item['name'] as String? ?? 'Unnamed Traverse';
     final date = item['date'] as String? ?? '';
     final precision = item['precision'] as String? ?? '';
-    final area = item['areaHa'] as num?;
+    final areaSqm = item['areaSqm'] as num?;
     final method = item['method'] as String? ?? '';
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
-      ),
-        child: InkWell(
+    return OpenContainer(
+      closedColor: Colors.transparent,
+      closedElevation: 0,
+      openElevation: 0,
+      closedBuilder: (_, action) => Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TraverseScreen(initialData: item))),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.brass.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.route, color: AppTheme.brass, size: 22),
+        ),
+        color: Theme.of(context).colorScheme.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.brass.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    if (method.isNotEmpty)
-                      Text(method, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
-                    if (precision.isNotEmpty || date.isNotEmpty)
-                      Text(
-                        [if (precision.isNotEmpty) precision, if (date.isNotEmpty) date].join(' \u00B7 '),
-                        style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11),
-                      ),
-                  ],
-                ),
+                child: const Icon(Icons.route, color: AppTheme.brass, size: 22),
               ),
-              if (area != null)
-                Column(
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  if (method.isNotEmpty)
+                    Text(method, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                  if (precision.isNotEmpty || date.isNotEmpty)
+                    Text(
+                      [if (precision.isNotEmpty) precision, if (date.isNotEmpty) date].join(' \u00B7 '),
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11),
+                    ),
+                ],
+              ),
+            ),
+            if (areaSqm != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('${area.toStringAsFixed(4)} ha', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
-                  ],
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSaved() {
-    final savedItem = _loadSaved();
-    final saved = savedItem != null ? [savedItem] : <Map<String, dynamic>>[];
-    if (saved.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.folder_open, size: 48, color: AppTheme.muted.withValues(alpha: 0.4)),
-            const SizedBox(height: 12),
-            Text('No saved traverses', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.muted)),
-            const SizedBox(height: 4),
-            Text('Save a traverse using the Save button', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
-          ],
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: saved.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _buildSavedCard(saved[i], i),
-    );
-  }
-
-  Widget _buildSavedCard(Map<String, dynamic> item, int index) {
-    final theme = Theme.of(context);
-    final name = item['name'] as String? ?? 'Unnamed Traverse';
-    final points = (item['points'] as List?)?.length ?? 0;
-    final startN = item['startN'] as String? ?? '';
-    final startE = item['startE'] as String? ?? '';
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
-      ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TraverseScreen(initialData: item))),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.steel.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.folder, color: AppTheme.steel, size: 22),
-                ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    Text('$points points', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
-                    if (startN.isNotEmpty && startE.isNotEmpty)
-                      Text('N: $startN  E: $startE', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11)),
+                    Text('${areaSqm.round()} sqm', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppTheme.muted),
-            ],
-          ),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _deleteHistoryItem(index),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 18, color: AppTheme.muted.withValues(alpha: 0.6)),
+              ),
+            ),
+          ],
+        ),
         ),
       ),
+      openBuilder: (_, action) => TraverseScreen(initialData: item),
     );
+  }
+
+  void _deleteHistoryItem(int index) async {
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: 'Delete',
+      message: 'Remove this traverse from history?',
+      confirmLabel: 'Delete',
+    );
+    if (!confirmed) return;
+
+    final jsonStr = StorageService().getString('gep_traverse_history');
+    if (jsonStr.isEmpty) return;
+    try {
+      final list = (json.decode(jsonStr) as List).cast<Map<String, dynamic>>();
+      list.removeAt(index);
+      StorageService().setString('gep_traverse_history', json.encode(list));
+      setState(() {});
+    } catch (_) {}
   }
 
   List<Map<String, dynamic>> _loadHistory() {
@@ -284,16 +270,6 @@ class _ToolsPageState extends State<ToolsPage> {
       return [];
     }
   }
-
-  Map<String, dynamic>? _loadSaved() {
-    final jsonStr = StorageService().getString('gep_traverse_data');
-    if (jsonStr.isEmpty) return null;
-    try {
-      return json.decode(jsonStr) as Map<String, dynamic>;
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
 class _ToolListTile extends StatelessWidget {
@@ -302,60 +278,64 @@ class _ToolListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
+    final card = Card(
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: tool.comingSoon
-            ? null
-            : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TraverseScreen())),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: tool.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(tool.icon, color: tool.color, size: 22),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: tool.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(tool.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                        if (tool.comingSoon) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.ink.withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text('Coming Soon', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.7))),
+              child: Icon(tool.icon, color: tool.color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(tool.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      if (tool.comingSoon) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.ink.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                        ],
+                          child: Text('Coming Soon', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.7))),
+                        ),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(tool.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 12)),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(tool.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 12)),
+                ],
               ),
-              Icon(tool.comingSoon ? Icons.lock_outline : Icons.chevron_right, color: AppTheme.muted),
-            ],
-          ),
+            ),
+            Icon(tool.comingSoon ? Icons.lock_outline : Icons.chevron_right, color: AppTheme.muted),
+          ],
         ),
       ),
+    );
+
+    if (tool.comingSoon) return card;
+
+    return OpenContainer(
+      closedColor: Colors.transparent,
+      closedElevation: 0,
+      openElevation: 0,
+      closedBuilder: (_, action) => card,
+      openBuilder: (_, action) => const TraverseScreen(),
     );
   }
 }
@@ -366,48 +346,53 @@ class _ToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
+    final card = Card(
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: tool.comingSoon
-            ? null
-            : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TraverseScreen())),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: tool.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(tool.icon, color: tool.color, size: 22),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: tool.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const Spacer(),
-              Text(tool.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 2),
-              Text(tool.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 6),
-              if (tool.comingSoon)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppTheme.ink.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text('Coming Soon', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.7))),
+              child: Icon(tool.icon, color: tool.color, size: 22),
+            ),
+            const Spacer(),
+            Text(tool.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(tool.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 6),
+            if (tool.comingSoon)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.ink.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-            ],
-          ),
+                child: Text('Coming Soon', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.7))),
+              ),
+          ],
         ),
       ),
+    );
+
+    if (tool.comingSoon) return card;
+
+    return OpenContainer(
+      closedColor: Colors.transparent,
+      closedElevation: 0,
+      openElevation: 0,
+      openShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      closedBuilder: (_, action) => card,
+      openBuilder: (_, action) => const TraverseScreen(),
     );
   }
 }

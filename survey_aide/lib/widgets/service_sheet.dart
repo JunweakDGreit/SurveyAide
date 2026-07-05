@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
@@ -19,6 +18,7 @@ class ServiceSheet extends ConsumerStatefulWidget {
   static Future<bool> show(BuildContext context, Service service) {
     final container = ProviderScope.containerOf(context, listen: false);
     container.read(bottomSheetOpenProvider.notifier).state = true;
+    container.read(modalCountProvider.notifier).state++;
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -26,6 +26,7 @@ class ServiceSheet extends ConsumerStatefulWidget {
       builder: (_) => ServiceSheet(service: service),
     ).whenComplete(() {
       container.read(bottomSheetOpenProvider.notifier).state = false;
+      container.read(modalCountProvider.notifier).state--;
     }).then((result) => result ?? false);
   }
 
@@ -42,7 +43,7 @@ class _ServiceSheetState extends ConsumerState<ServiceSheet> {
   @override
   void initState() {
     super.initState();
-    _interp = StorageService().getBool('gep_interpolate', def: false);
+    _interp = StorageService().getBool('gep_interpolate', def: true);
     for (final f in widget.service.fields) {
       if (f.type == 'select') {
         _selectValues[f.key] = f.options.isNotEmpty ? f.options.first.value : '';
@@ -88,7 +89,7 @@ class _ServiceSheetState extends ConsumerState<ServiceSheet> {
       final custom = ref.read(rateProvider.notifier).getRate(widget.service.rates, widget.service.code, k);
       return MapEntry(k, custom);
     });
-    return ComputationService.compute(widget.service.code, values, rates, interp: _interp);
+    return ComputationService.compute(widget.service.code, values, rates, widget.service.labels, interp: _interp);
   }
 
   double get _total {
@@ -104,7 +105,7 @@ class _ServiceSheetState extends ConsumerState<ServiceSheet> {
   }
 
   Future<void> _addToPayment() async {
-    final result = await showDialog<({String name, String location})>(
+    final result = await showDialog<({String name, String location, String billingAddress})>(
       context: context,
       builder: (_) => const ClientDialog(),
     );
@@ -119,6 +120,7 @@ class _ServiceSheetState extends ConsumerState<ServiceSheet> {
       lines: List.from(_computedLines),
       client: result.name,
       location: result.location,
+      billingAddress: result.billingAddress,
     );
 
     ref.read(quoteProvider.notifier).addItem(entry);
@@ -134,20 +136,14 @@ class _ServiceSheetState extends ConsumerState<ServiceSheet> {
     final lines = _computedLines;
     final total = _total;
 
-    final isDark = theme.brightness == Brightness.dark;
-
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: glassDecoration(
-            opacity: isDark ? 0.30 : 0.40,
-            blur: 12,
-            radius: 20,
-            dark: isDark,
-          ),
-          child: Column(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Drag handle
@@ -275,7 +271,6 @@ class _ServiceSheetState extends ConsumerState<ServiceSheet> {
         ],
         ),
       ),
-      ),
     );
   }
 }
@@ -300,7 +295,7 @@ class _SelectInput extends StatelessWidget {
         Text(field.label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65), fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
         DropdownButtonFormField<String>(
-          initialValue: field.options.any((o) => o.value == value) ? value : field.options.firstOrNull?.value,
+          initialValue: field.options.any((o) => o.value == value) ? value : (field.options.isNotEmpty ? field.options.first.value : ''),
           items: field.options.map((o) => DropdownMenuItem(value: o.value, child: Text(o.label, style: const TextStyle(fontSize: 14)))).toList(),
           onChanged: (v) { if (v != null) onChanged(v); },
           decoration: glassInputDecoration(context),

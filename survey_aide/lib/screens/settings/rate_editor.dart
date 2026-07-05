@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/constants.dart';
-import '../../core/helpers.dart';
 import '../../providers/rate_provider.dart';
+
+final _numFmt = NumberFormat('#,##0.00', 'en_US');
+
+double _parseVal(String text) {
+  final cleaned = text.replaceAll(',', '');
+  return double.tryParse(cleaned) ?? double.nan;
+}
 
 class RateEditor extends ConsumerStatefulWidget {
   final String serviceCode;
@@ -32,6 +39,17 @@ class _RateEditorState extends ConsumerState<RateEditor> {
     _initControllers();
   }
 
+  @override
+  void didUpdateWidget(RateEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.defaultRates != widget.defaultRates) {
+      for (final c in _controllers.values) {
+        c.dispose();
+      }
+      _initControllers();
+    }
+  }
+
   void _initControllers() {
     _controllers = {};
     for (final entry in widget.defaultRates.entries) {
@@ -40,10 +58,10 @@ class _RateEditorState extends ConsumerState<RateEditor> {
         widget.serviceCode,
         entry.key,
       );
-      _controllers[entry.key] = TextEditingController(text: currentVal.toString());
+      _controllers[entry.key] = TextEditingController(text: _numFmt.format(currentVal));
       _controllers[entry.key]!.addListener(() {
-        final isDiff = _controllers[entry.key]!.text !=
-            ref.read(rateProvider.notifier).getRate(widget.defaultRates, widget.serviceCode, entry.key).toString();
+        final stored = ref.read(rateProvider.notifier).getRate(widget.defaultRates, widget.serviceCode, entry.key);
+        final isDiff = _parseVal(_controllers[entry.key]!.text) != stored;
         if (isDiff != _hasChanges) {
           setState(() => _hasChanges = isDiff);
         }
@@ -62,16 +80,15 @@ class _RateEditorState extends ConsumerState<RateEditor> {
 
   bool get _isChanged {
     for (final entry in widget.defaultRates.entries) {
-      final current = double.tryParse(_controllers[entry.key]?.text ?? '') ?? entry.value;
-      final original = entry.value;
-      if (current != original) return true;
+      final current = _parseVal(_controllers[entry.key]?.text ?? '');
+      if (current != entry.value) return true;
     }
     return false;
   }
 
   void _resetService() {
     for (final entry in widget.defaultRates.entries) {
-      _controllers[entry.key]?.text = entry.value.toString();
+      _controllers[entry.key]?.text = _numFmt.format(entry.value);
       ref.read(rateProvider.notifier).resetRate(widget.serviceCode, entry.key);
     }
     setState(() => _hasChanges = false);
@@ -80,10 +97,9 @@ class _RateEditorState extends ConsumerState<RateEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -93,7 +109,7 @@ class _RateEditorState extends ConsumerState<RateEditor> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -125,7 +141,7 @@ class _RateEditorState extends ConsumerState<RateEditor> {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             for (final entry in widget.defaultRates.entries) ...[
               _RateRow(
                 keyName: entry.key,
@@ -140,7 +156,7 @@ class _RateEditorState extends ConsumerState<RateEditor> {
                   }
                 },
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
             ],
           ],
         ),
@@ -167,8 +183,8 @@ class _RateRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currentVal = double.tryParse(controller.text) ?? defaultValue;
-    final isChanged = currentVal != defaultValue;
+    final currentVal = _parseVal(controller.text);
+    final isChanged = !currentVal.isNaN && currentVal != defaultValue;
 
     return Row(
       children: [
@@ -181,9 +197,7 @@ class _RateRow extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isChanged ? AppTheme.brass : theme.dividerColor,
-              ),
+              color: isChanged ? AppTheme.brass.withValues(alpha: 0.08) : null,
             ),
             child: TextField(
               controller: controller,
@@ -191,21 +205,23 @@ class _RateRow extends StatelessWidget {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: InputBorder.none,
                 prefixText: '\u20B1 ',
                 prefixStyle: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
               ),
               onSubmitted: (val) {
-                final parsed = double.tryParse(val) ?? defaultValue;
-                onChanged(parsed);
+                final parsed = _parseVal(val);
+                final finalVal = parsed.isNaN ? defaultValue : parsed;
+                controller.text = _numFmt.format(finalVal);
+                onChanged(finalVal);
               },
             ),
           ),
         ),
         if (isChanged) ...[
           const SizedBox(width: 4),
-          Text('(${peso(defaultValue)})', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+          Text('(${_numFmt.format(defaultValue)})', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
         ],
       ],
     );

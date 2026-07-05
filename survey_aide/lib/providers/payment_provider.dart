@@ -5,25 +5,34 @@ import '../services/storage_service.dart';
 class Installment {
   final String label;
   final double pct;
+  final bool isFixed;
   final DateTime? dueDate;
   final bool paid;
 
   const Installment({
     required this.label,
     required this.pct,
+    this.isFixed = false,
     this.dueDate,
     this.paid = false,
   });
 
+  double amount(double basis) {
+    if (isFixed) return pct;
+    return basis * pct / 100;
+  }
+
   Installment copyWith({
     String? label,
     double? pct,
+    bool? isFixed,
     DateTime? dueDate,
     bool? paid,
   }) {
     return Installment(
       label: label ?? this.label,
       pct: pct ?? this.pct,
+      isFixed: isFixed ?? this.isFixed,
       dueDate: dueDate ?? this.dueDate,
       paid: paid ?? this.paid,
     );
@@ -32,14 +41,16 @@ class Installment {
   Map<String, dynamic> toJson() => {
     'label': label,
     'pct': pct,
+    if (isFixed) 'isFixed': true,
     'dueDate': dueDate?.toIso8601String(),
     'paid': paid,
   };
 
   factory Installment.fromJson(Map<String, dynamic> json) => Installment(
-    label: json['label'] as String,
-    pct: (json['pct'] as num).toDouble(),
-    dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate'] as String) : null,
+    label: (json['label'] as String?) ?? '',
+    pct: ((json['pct'] as num?)?.toDouble()) ?? 0,
+    isFixed: json['isFixed'] as bool? ?? false,
+    dueDate: json['dueDate'] != null ? DateTime.tryParse(json['dueDate'] as String) : null,
     paid: json['paid'] as bool? ?? false,
   );
 }

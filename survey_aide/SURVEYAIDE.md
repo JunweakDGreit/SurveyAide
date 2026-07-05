@@ -22,21 +22,19 @@ Replace the current fragmented workflow (QGIS plugin for survey computation + Ko
 - Import/export rate overrides as JSON
 - Dark mode support with system-follow option
 
-### Tab 2 — Tools (12 survey tools)
-*All tools are placeholders with Coming Soon badges — math engine not yet ported.*
-
-- Point Entry (geographic/grid/bearing-distance input)
-- Coordinate Transform (WGS84 ↔ PRS92, UTM ↔ PTM)
-- Zone Detection (auto PRS92/UTM zone)
-- Bearing & Distance computation
-- Traverse Closure (Compass Rule / Transit Rule)
-- Area Computation (Shoelace, DMD)
-- Lot Data Computation Sheet (LMB Form GSD-B-11)
-- Technical Description (DENR metes-and-bounds)
-- Export Documents (TRAVERSE, LDC, DLSD, TRD/TRX)
-- Monument Data (BLLM, PSM)
-- Field Notes (DENR template)
-- GPS / Map Tools
+### Tab 2 — Tools
+- **Traverse Computation** (fully functional)
+  - Bearing & Distance input mode with auto-station labeling
+  - Northing/Easting direct coordinate entry mode
+  - Tie Point (BLLM / Control) support
+  - Compass Rule / Transit Rule adjustment with live switching
+  - DMD area computation (sqm + hectares) and perimeter
+  - Sketch plan with auto-scaling, north arrow, scale bar
+  - Detailed computation view toggle (Lat/Dep/Corrections)
+  - Results export to clipboard
+  - History (auto-saved, last 20) and Save/Load
+  - Offline storage via SharedPreferences
+- **Coordinate Transform** (Coming Soon)
 
 ### Tab 3 — Survey Returns (DENR compliance)
 *Placeholder with Coming Soon badges.*
@@ -57,10 +55,10 @@ Replace the current fragmented workflow (QGIS plugin for survey computation + Ko
 
 ## Upcoming Features
 
-### Phase 1 — Math Engine Port (QGIS Python → Dart)
+### Phase 1 — Math Engine Port (QGIS Python → Dart) ✅
+- **Traverse Closure**: Latitude/departure, Compass Rule / Transit Rule adjustment, precision check (1:10k) — **done**
+- **Area Computation**: DMD method, coordinate method — **done**
 - **Coordinate Transform**: 7-parameter Helmert (WGS84 ↔ PRS92), PTM zone math, UTM conversions
-- **Traverse Closure**: Latitude/departure, Compass Rule adjustment, precision check (1:10k)
-- **Area Computation**: DMD method, coordinate method, cross-multiplication
 - **Geodetic Bearing & Distance**: Forward/inverse on ellipsoid
 
 ### Phase 2 — Point Entry & Map Tools
@@ -110,7 +108,7 @@ lib/
 │   ├── search/        # Service search
 │   ├── payment/       # Payment list + installment form
 │   ├── schedule/      # Calendar + appointments
-│   ├── tools/         # 12 survey tool cards (placeholders)
+│   ├── tools/         # Traverse computation + tools hub (history/saved)
 │   ├── survey_returns/ # DENR checklist + reports (placeholders)
 │   ├── settings/      # Profile, rate editor, theme
 │   ├── setup/         # First-launch onboarding

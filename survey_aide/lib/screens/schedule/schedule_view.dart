@@ -35,6 +35,7 @@ class _ScheduleViewState extends ConsumerState<ScheduleView> {
     ).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(child: Column(
         children: [
           TableCalendar(
@@ -111,11 +112,14 @@ class _ScheduleViewState extends ConsumerState<ScheduleView> {
         ],
       ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addAppointment(context),
-        backgroundColor: AppTheme.brass,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: FloatingActionButton(
+          onPressed: () => _addAppointment(context),
+          backgroundColor: AppTheme.brass,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

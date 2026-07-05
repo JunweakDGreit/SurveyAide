@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/region_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/service_sheet.dart';
 import '../../widgets/toast.dart';
@@ -58,7 +59,7 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
   @override
   Widget build(BuildContext context) {
     final servicesAsync = ref.watch(servicesProvider);
-    final region = ref.watch(regionProvider);
+    final regionCode = ref.watch(selectedRegionCodeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -68,7 +69,7 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                region.displayName,
+                regionCode,
                 style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75)),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -76,24 +77,60 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(_gridMode ? Icons.view_list_outlined : Icons.grid_view_outlined),
-            tooltip: _gridMode ? 'List view' : 'Grid view',
-            onPressed: () => setState(() {
-              _gridMode = !_gridMode;
-              StorageService().setBool('gep_calc_grid_mode', _gridMode);
-            }),
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => SettingsSheet.show(context),
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+          PopupMenuButton<_AppBarAction>(
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65)),
+            onSelected: (action) {
+              switch (action) {
+                case _AppBarAction.toggleView:
+                  setState(() {
+                    _gridMode = !_gridMode;
+                    StorageService().setBool('gep_calc_grid_mode', _gridMode);
+                  });
+                case _AppBarAction.toggleTheme:
+                  final currentMode = ref.read(themeProvider).mode;
+                  if (currentMode == ThemeMode.dark) {
+                    ref.read(themeProvider.notifier).setThemeMode(ThemeMode.light);
+                  } else {
+                    ref.read(themeProvider.notifier).setThemeMode(ThemeMode.dark);
+                  }
+                case _AppBarAction.settings:
+                  SettingsSheet.show(context);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: _AppBarAction.toggleView,
+                child: ListTile(
+                  leading: Icon(_gridMode ? Icons.view_list_outlined : Icons.grid_view_outlined),
+                  title: Text(_gridMode ? 'List View' : 'Grid View'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              PopupMenuItem(
+                value: _AppBarAction.toggleTheme,
+                child: ListTile(
+                  leading: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
+                  title: Text(Theme.of(context).brightness == Brightness.dark ? 'Light Mode' : 'Dark Mode'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const PopupMenuItem(
+                value: _AppBarAction.settings,
+                child: ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text('Settings'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
         ],
       ),
       body: servicesAsync.when(
-        data: (regionData) => _buildBody(context, regionData),
+        data: (services) => _buildBody(context, services),
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brass)),
         error: (err, _) => Center(
           child: Padding(
@@ -105,24 +142,25 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
     );
   }
 
-  Widget _buildBody(BuildContext context, RegionData regionData) {
+  Widget _buildBody(BuildContext context, List<Service> allServices) {
+    final categoriesAsync = ref.watch(categoriesProvider);
     final theme = Theme.of(context);
     final showFav = StorageService().getBool('gep_show_fav_tab', def: true);
     final pinned = ref.watch(pinnedProvider);
-    final categories = regionData.categories;
-    final allServices = regionData.services;
 
-    final filteredCats = <String>[];
-    if (showFav && pinned.isNotEmpty) {
-      filteredCats.add('Favorites');
-    }
-    for (final cat in categories) {
-      filteredCats.add(cat.key);
-    }
+    return categoriesAsync.when(
+      data: (categories) {
+        final filteredCats = <String>[];
+        if (showFav && pinned.isNotEmpty) {
+          filteredCats.add('Favorites');
+        }
+        for (final cat in categories) {
+          filteredCats.add(cat.key);
+        }
 
-    if (_activeTab >= filteredCats.length) {
-      _activeTab = 0;
-    }
+        if (_activeTab >= filteredCats.length) {
+          _activeTab = 0;
+        }
 
     return Column(
       children: [
@@ -199,6 +237,15 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
           ),
         ),
       ],
+    );
+      },
+      loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brass)),
+      error: (err, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text('Failed to load categories: $err', style: const TextStyle(color: AppTheme.marker)),
+        ),
+      ),
     );
   }
 
@@ -493,3 +540,5 @@ class _ServiceCardState extends State<_ServiceCard> {
   }
 }
 
+
+enum _AppBarAction { toggleView, toggleTheme, settings }

@@ -1,6 +1,8 @@
 import '../core/constants.dart';
 import '../core/helpers.dart';
 
+typedef _ComputeFn = List<TallyLine> Function(Map<String, dynamic>, Map<String, double>, Map<String, String>, bool);
+
 class ComputationService {
   static String _trimNum(double n) {
     return n == n.roundToDouble() ? n.toInt().toString() : n.toStringAsFixed(2);
@@ -9,12 +11,13 @@ class ComputationService {
   static List<TallyLine> compute(
     String code,
     Map<String, dynamic> fields,
-    Map<String, double> rates, {
+    Map<String, double> rates,
+    Map<String, String> labels, {
     bool interp = false,
   }) {
     final fn = _dispatch[code];
     if (fn == null) throw ArgumentError('Unknown service code: $code');
-    return fn(fields, rates, interp);
+    return fn(fields, rates, labels, interp);
   }
 
   static TallyLine _tieredCompute(
@@ -49,7 +52,7 @@ class ComputationService {
     );
   }
 
-  static final Map<String, List<TallyLine> Function(Map<String, dynamic>, Map<String, double>, bool)> _dispatch = {
+  static final Map<String, _ComputeFn> _dispatch = {
     'A.1': _computeA1,
     'A.2': _computeA2,
     'A.3': _computeA3,
@@ -87,20 +90,21 @@ class ComputationService {
     'D.5': _computeD5,
   };
 
-  static List<TallyLine> _computeA1(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeA1(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
-    final excessHa = f['excessHa'] ?? 0.0;
+    final totalHa = f['totalHa'] ?? 1.0;
+    final excessHa = (totalHa - 1).clamp(0.0, double.infinity);
     final marks = f['marks'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
 
-    items.add(TallyLine(label: rateLabels['A.1']!['base']!, amount: r['base'] ?? 0.0));
+    items.add(TallyLine(label: l['base']!, amount: r['base'] ?? 0.0));
 
     if (excessHa > 0) {
       final qty = interp ? excessHa : excessHa.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(excessHa)} ha \u00D7 ${peso(r['excessHaPerHa'] ?? 0.0)}/ha'
-            : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHaPerHa'] ?? 0.0)}',
+            ? '+ ${fmtArea(totalHa)} total (${fmtArea(excessHa)} excess) \u00D7 ${peso(r['excessHaPerHa'] ?? 0.0)}/ha'
+            : '+ ${fmtArea(totalHa)} total (${qty.toInt()} ha excess) @ ${peso(r['excessHaPerHa'] ?? 0.0)}/ha',
         amount: qty * (r['excessHaPerHa'] ?? 0.0),
       ));
     }
@@ -119,20 +123,21 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeA2(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeA2(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
-    final excessHa = f['excessHa'] ?? 0.0;
+    final totalHa = f['totalHa'] ?? 1.0;
+    final excessHa = (totalHa - 1).clamp(0.0, double.infinity);
     final distanceKm = f['distanceKm'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
 
-    items.add(TallyLine(label: rateLabels['A.2']!['base']!, amount: r['base'] ?? 0.0));
+    items.add(TallyLine(label: l['base']!, amount: r['base'] ?? 0.0));
 
     if (excessHa > 0) {
       final qty = interp ? excessHa : excessHa.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(excessHa)} ha \u00D7 ${peso(r['excessHaPerHa'] ?? 0.0)}/ha'
-            : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHaPerHa'] ?? 0.0)}',
+            ? '+ ${fmtArea(totalHa)} total (${fmtArea(excessHa)} excess) \u00D7 ${peso(r['excessHaPerHa'] ?? 0.0)}/ha'
+            : '+ ${fmtArea(totalHa)} total (${qty.toInt()} ha excess) @ ${peso(r['excessHaPerHa'] ?? 0.0)}/ha',
         amount: qty * (r['excessHaPerHa'] ?? 0.0),
       ));
     }
@@ -154,14 +159,14 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeA3(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeA3(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final lots = f['lots'] ?? 0.0;
     final resultantHa = f['resultantHa'] ?? 0.0;
     final marks = f['marks'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
 
-    items.add(TallyLine(label: rateLabels['A.3']!['base']!, amount: r['base'] ?? 0.0));
+    items.add(TallyLine(label: l['base']!, amount: r['base'] ?? 0.0));
 
     final extraLots = (lots - 2).clamp(0.0, double.infinity);
     if (extraLots > 0) {
@@ -176,7 +181,7 @@ class ComputationService {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHaPerHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHaPerHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHaPerHa'] ?? 0.0)}',
         amount: qty * (r['excessHaPerHa'] ?? 0.0),
       ));
@@ -196,7 +201,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeA4(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeA4(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final lots = f['lots'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -210,14 +215,14 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeA5(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeA5(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final motherLots = f['motherLots'] ?? 0.0;
     final consolidatedHa = f['consolidatedHa'] ?? 0.0;
     final marks = f['marks'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
 
-    items.add(TallyLine(label: rateLabels['A.5']!['base']!, amount: r['base'] ?? 0.0));
+    items.add(TallyLine(label: l['base']!, amount: r['base'] ?? 0.0));
 
     final extraLots = (motherLots - 2).clamp(0.0, double.infinity);
     if (extraLots > 0) {
@@ -232,7 +237,7 @@ class ComputationService {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHa'] ?? 0.0)}',
         amount: qty * (r['excessHa'] ?? 0.0),
       ));
@@ -252,19 +257,19 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeA6(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeA6(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
 
-    items.add(TallyLine(label: rateLabels['A.6']!['base']!, amount: r['base'] ?? 0.0));
+    items.add(TallyLine(label: l['base']!, amount: r['base'] ?? 0.0));
 
     final raw = (ha - 1).clamp(0.0, double.infinity);
     if (raw > 0) {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHa'] ?? 0.0)}',
         amount: qty * (r['excessHa'] ?? 0.0),
       ));
@@ -277,7 +282,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB1a(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB1a(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -291,7 +296,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB1b(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB1b(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -305,19 +310,19 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB2(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB2(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
 
-    items.add(TallyLine(label: rateLabels['B.2']!['base']!, amount: r['base'] ?? 0.0));
+    items.add(TallyLine(label: l['base']!, amount: r['base'] ?? 0.0));
 
     final raw = (ha - 1).clamp(0.0, double.infinity);
     if (raw > 0) {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHa'] ?? 0.0)}',
         amount: qty * (r['excessHa'] ?? 0.0),
       ));
@@ -330,7 +335,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB3a(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB3a(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final km = f['km'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -347,7 +352,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB3b(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB3b(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final sections = f['sections'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -364,7 +369,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB3c(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB3c(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final km = f['km'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -381,7 +386,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB4a(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB4a(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final terrain = (f['terrain'] ?? 0.0).toString(); // select field returns value string
     final km = f['km'] ?? 0.0;
@@ -404,7 +409,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB4b(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB4b(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final terrain = (f['terrain'] ?? 0.0).toString();
     final km = f['km'] ?? 0.0;
@@ -425,7 +430,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB4c(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB4c(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final terrain = (f['terrain'] ?? 0.0).toString();
     final km = f['km'] ?? 0.0;
@@ -446,7 +451,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB4d(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB4d(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final terrain = (f['terrain'] ?? 0.0).toString();
     final km = f['km'] ?? 0.0;
@@ -475,7 +480,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB4e(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB4e(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final km = f['km'] ?? 0.0;
 
@@ -487,7 +492,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB5(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB5(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final km = f['km'] ?? 0.0;
     final totalLots = f['totalLots'] ?? 0.0;
@@ -519,7 +524,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB6(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB6(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final sites = f['sites'] ?? 0.0;
 
@@ -531,7 +536,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB7a(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB7a(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final km = f['km'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -548,7 +553,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB7b(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB7b(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final buildings = f['buildings'] ?? 0.0;
     final areaSqm = f['areaSqm'] ?? 0.0;
@@ -570,7 +575,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB8a(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB8a(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
     final addon = f['addon'] ?? 0.0;
@@ -582,7 +587,7 @@ class ComputationService {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHa'] ?? 0.0)}',
         amount: qty * (r['excessHa'] ?? 0.0),
       ));
@@ -595,7 +600,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB8b(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB8b(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final interval = (f['interval'] ?? 0.0).toString();
     final points = f['points'] ?? 0.0;
@@ -618,7 +623,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB8c(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB8c(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
 
@@ -629,7 +634,7 @@ class ComputationService {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHa'] ?? 0.0)}',
         amount: qty * (r['excessHa'] ?? 0.0),
       ));
@@ -638,7 +643,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeB8d(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeB8d(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
 
@@ -649,7 +654,7 @@ class ComputationService {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} succeeding hectare(s) @ ${peso(r['excessHa'] ?? 0.0)}',
         amount: qty * (r['excessHa'] ?? 0.0),
       ));
@@ -658,7 +663,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeC1(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeC1(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final planType = (f['planType'] ?? 0.0).toString();
     final qty = f['qty'] ?? 0.0;
@@ -675,7 +680,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeC2(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeC2(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final qty = f['qty'] ?? 0.0;
 
@@ -687,7 +692,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeC3(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeC3(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final classes = f['classes'] ?? 0.0;
     final haPerClass = f['haPerClass'] ?? 0.0;
@@ -702,7 +707,7 @@ class ComputationService {
       final qty = interp ? raw : raw.ceilToDouble();
       items.add(TallyLine(
         label: interp
-            ? '+ ${fmtArea(raw)} ha \u00D7 ${classes.toInt()} class(es) \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
+            ? '+ ${fmtArea(raw)} \u00D7 ${classes.toInt()} class(es) \u00D7 ${peso(r['excessHa'] ?? 0.0)}/ha'
             : '+ ${qty.toInt()} ha excess \u00D7 ${classes.toInt()} class(es) @ ${peso(r['excessHa'] ?? 0.0)}/ha',
         amount: classes * qty * (r['excessHa'] ?? 0.0),
       ));
@@ -711,7 +716,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeC4(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeC4(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final qty = f['qty'] ?? 0.0;
 
@@ -723,7 +728,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeC5(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeC5(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ha = f['ha'] ?? 0.0;
     final minHa = r['minHa'] ?? 0.0;
@@ -739,7 +744,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeD1(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeD1(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final appearances = f['appearances'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -756,7 +761,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeD2(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeD2(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final qty = f['qty'] ?? 0.0;
 
@@ -768,7 +773,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeD3(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeD3(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final areas = f['areas'] ?? 0.0;
     final transport = f['transport'] ?? 0.0;
@@ -785,7 +790,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeD4(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeD4(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final ts = f['totalStationDays'] ?? 0.0;
     final gps = f['gpsDays'] ?? 0.0;
@@ -831,7 +836,7 @@ class ComputationService {
     return items;
   }
 
-  static List<TallyLine> _computeD5(Map<String, dynamic> f, Map<String, double> r, bool interp) {
+  static List<TallyLine> _computeD5(Map<String, dynamic> f, Map<String, double> r, Map<String, String> l, bool interp) {
     final items = <TallyLine>[];
     final withATP = f['withATP'] ?? 0.0;
     final withoutATP = f['withoutATP'] ?? 0.0;

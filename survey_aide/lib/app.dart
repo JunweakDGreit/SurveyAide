@@ -11,6 +11,25 @@ import 'screens/search/search_view.dart';
 import 'screens/payment/payment_view.dart';
 import 'screens/schedule/schedule_view.dart';
 
+CustomTransitionPage<void> _tabPage(Widget child, GoRouterState state) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.04),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final setup = ref.watch(setupProvider);
   return GoRouter(
@@ -29,10 +48,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (_, __, child) => HomeScreen(child: child),
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const CalculatorView()),
-          GoRoute(path: '/search', builder: (_, __) => const SearchView()),
-          GoRoute(path: '/payment', builder: (_, __) => const PaymentView()),
-          GoRoute(path: '/schedule', builder: (_, __) => const ScheduleView()),
+          GoRoute(
+            path: '/',
+            pageBuilder: (context, state) => _tabPage(const CalculatorView(), state),
+          ),
+          GoRoute(
+            path: '/search',
+            pageBuilder: (context, state) => _tabPage(const SearchView(), state),
+          ),
+          GoRoute(
+            path: '/payment',
+            pageBuilder: (context, state) => _tabPage(const PaymentView(), state),
+          ),
+          GoRoute(
+            path: '/schedule',
+            pageBuilder: (context, state) => _tabPage(const ScheduleView(), state),
+          ),
         ],
       ),
     ],
@@ -44,15 +75,15 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
+    final themeState = ref.watch(themeProvider);
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: 'Survey Aide',
       debugShowCheckedModeBanner: false,
-      themeMode: themeMode,
-      theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
+      themeMode: themeState.mode,
+      theme: buildLightTheme(themeState.preset),
+      darkTheme: buildDarkTheme(themeState.preset),
       routerConfig: router,
     );
   }

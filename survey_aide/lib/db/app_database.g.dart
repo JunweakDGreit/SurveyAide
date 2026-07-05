@@ -1458,6 +1458,1582 @@ class AppointmentsCompanion extends UpdateCompanion<Appointment> {
   }
 }
 
+class $ServiceCategoriesTable extends ServiceCategories
+    with TableInfo<$ServiceCategoriesTable, DbServiceCategory> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServiceCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _iconNameMeta =
+      const VerificationMeta('iconName');
+  @override
+  late final GeneratedColumn<String> iconName = GeneratedColumn<String>(
+      'icon_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [key, label, color, iconName];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'service_categories';
+  @override
+  VerificationContext validateIntegrity(Insertable<DbServiceCategory> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    } else if (isInserting) {
+      context.missing(_colorMeta);
+    }
+    if (data.containsKey('icon_name')) {
+      context.handle(_iconNameMeta,
+          iconName.isAcceptableOrUnknown(data['icon_name']!, _iconNameMeta));
+    } else if (isInserting) {
+      context.missing(_iconNameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  DbServiceCategory map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DbServiceCategory(
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      label: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!,
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color'])!,
+      iconName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}icon_name'])!,
+    );
+  }
+
+  @override
+  $ServiceCategoriesTable createAlias(String alias) {
+    return $ServiceCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class DbServiceCategory extends DataClass
+    implements Insertable<DbServiceCategory> {
+  final String key;
+  final String label;
+  final String color;
+  final String iconName;
+  const DbServiceCategory(
+      {required this.key,
+      required this.label,
+      required this.color,
+      required this.iconName});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['label'] = Variable<String>(label);
+    map['color'] = Variable<String>(color);
+    map['icon_name'] = Variable<String>(iconName);
+    return map;
+  }
+
+  ServiceCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return ServiceCategoriesCompanion(
+      key: Value(key),
+      label: Value(label),
+      color: Value(color),
+      iconName: Value(iconName),
+    );
+  }
+
+  factory DbServiceCategory.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DbServiceCategory(
+      key: serializer.fromJson<String>(json['key']),
+      label: serializer.fromJson<String>(json['label']),
+      color: serializer.fromJson<String>(json['color']),
+      iconName: serializer.fromJson<String>(json['iconName']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'label': serializer.toJson<String>(label),
+      'color': serializer.toJson<String>(color),
+      'iconName': serializer.toJson<String>(iconName),
+    };
+  }
+
+  DbServiceCategory copyWith(
+          {String? key, String? label, String? color, String? iconName}) =>
+      DbServiceCategory(
+        key: key ?? this.key,
+        label: label ?? this.label,
+        color: color ?? this.color,
+        iconName: iconName ?? this.iconName,
+      );
+  DbServiceCategory copyWithCompanion(ServiceCategoriesCompanion data) {
+    return DbServiceCategory(
+      key: data.key.present ? data.key.value : this.key,
+      label: data.label.present ? data.label.value : this.label,
+      color: data.color.present ? data.color.value : this.color,
+      iconName: data.iconName.present ? data.iconName.value : this.iconName,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DbServiceCategory(')
+          ..write('key: $key, ')
+          ..write('label: $label, ')
+          ..write('color: $color, ')
+          ..write('iconName: $iconName')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, label, color, iconName);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DbServiceCategory &&
+          other.key == this.key &&
+          other.label == this.label &&
+          other.color == this.color &&
+          other.iconName == this.iconName);
+}
+
+class ServiceCategoriesCompanion extends UpdateCompanion<DbServiceCategory> {
+  final Value<String> key;
+  final Value<String> label;
+  final Value<String> color;
+  final Value<String> iconName;
+  final Value<int> rowid;
+  const ServiceCategoriesCompanion({
+    this.key = const Value.absent(),
+    this.label = const Value.absent(),
+    this.color = const Value.absent(),
+    this.iconName = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServiceCategoriesCompanion.insert({
+    required String key,
+    required String label,
+    required String color,
+    required String iconName,
+    this.rowid = const Value.absent(),
+  })  : key = Value(key),
+        label = Value(label),
+        color = Value(color),
+        iconName = Value(iconName);
+  static Insertable<DbServiceCategory> custom({
+    Expression<String>? key,
+    Expression<String>? label,
+    Expression<String>? color,
+    Expression<String>? iconName,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (label != null) 'label': label,
+      if (color != null) 'color': color,
+      if (iconName != null) 'icon_name': iconName,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServiceCategoriesCompanion copyWith(
+      {Value<String>? key,
+      Value<String>? label,
+      Value<String>? color,
+      Value<String>? iconName,
+      Value<int>? rowid}) {
+    return ServiceCategoriesCompanion(
+      key: key ?? this.key,
+      label: label ?? this.label,
+      color: color ?? this.color,
+      iconName: iconName ?? this.iconName,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (iconName.present) {
+      map['icon_name'] = Variable<String>(iconName.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceCategoriesCompanion(')
+          ..write('key: $key, ')
+          ..write('label: $label, ')
+          ..write('color: $color, ')
+          ..write('iconName: $iconName, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ServicesTable extends Services
+    with TableInfo<$ServicesTable, DbService> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServicesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+      'code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _catMeta = const VerificationMeta('cat');
+  @override
+  late final GeneratedColumn<String> cat = GeneratedColumn<String>(
+      'cat', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _groupMeta = const VerificationMeta('group');
+  @override
+  late final GeneratedColumn<String> group = GeneratedColumn<String>(
+      'group', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shortDescriptionMeta =
+      const VerificationMeta('shortDescription');
+  @override
+  late final GeneratedColumn<String> shortDescription = GeneratedColumn<String>(
+      'short_description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+      'note', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [code, name, cat, group, shortDescription, note];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'services';
+  @override
+  VerificationContext validateIntegrity(Insertable<DbService> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('code')) {
+      context.handle(
+          _codeMeta, code.isAcceptableOrUnknown(data['code']!, _codeMeta));
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('cat')) {
+      context.handle(
+          _catMeta, cat.isAcceptableOrUnknown(data['cat']!, _catMeta));
+    } else if (isInserting) {
+      context.missing(_catMeta);
+    }
+    if (data.containsKey('group')) {
+      context.handle(
+          _groupMeta, group.isAcceptableOrUnknown(data['group']!, _groupMeta));
+    }
+    if (data.containsKey('short_description')) {
+      context.handle(
+          _shortDescriptionMeta,
+          shortDescription.isAcceptableOrUnknown(
+              data['short_description']!, _shortDescriptionMeta));
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+          _noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {code};
+  @override
+  DbService map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DbService(
+      code: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}code'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      cat: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cat'])!,
+      group: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group']),
+      shortDescription: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}short_description']),
+      note: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note']),
+    );
+  }
+
+  @override
+  $ServicesTable createAlias(String alias) {
+    return $ServicesTable(attachedDatabase, alias);
+  }
+}
+
+class DbService extends DataClass implements Insertable<DbService> {
+  final String code;
+  final String name;
+  final String cat;
+  final String? group;
+  final String? shortDescription;
+  final String? note;
+  const DbService(
+      {required this.code,
+      required this.name,
+      required this.cat,
+      this.group,
+      this.shortDescription,
+      this.note});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['code'] = Variable<String>(code);
+    map['name'] = Variable<String>(name);
+    map['cat'] = Variable<String>(cat);
+    if (!nullToAbsent || group != null) {
+      map['group'] = Variable<String>(group);
+    }
+    if (!nullToAbsent || shortDescription != null) {
+      map['short_description'] = Variable<String>(shortDescription);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  ServicesCompanion toCompanion(bool nullToAbsent) {
+    return ServicesCompanion(
+      code: Value(code),
+      name: Value(name),
+      cat: Value(cat),
+      group:
+          group == null && nullToAbsent ? const Value.absent() : Value(group),
+      shortDescription: shortDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shortDescription),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory DbService.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DbService(
+      code: serializer.fromJson<String>(json['code']),
+      name: serializer.fromJson<String>(json['name']),
+      cat: serializer.fromJson<String>(json['cat']),
+      group: serializer.fromJson<String?>(json['group']),
+      shortDescription: serializer.fromJson<String?>(json['shortDescription']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'code': serializer.toJson<String>(code),
+      'name': serializer.toJson<String>(name),
+      'cat': serializer.toJson<String>(cat),
+      'group': serializer.toJson<String?>(group),
+      'shortDescription': serializer.toJson<String?>(shortDescription),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  DbService copyWith(
+          {String? code,
+          String? name,
+          String? cat,
+          Value<String?> group = const Value.absent(),
+          Value<String?> shortDescription = const Value.absent(),
+          Value<String?> note = const Value.absent()}) =>
+      DbService(
+        code: code ?? this.code,
+        name: name ?? this.name,
+        cat: cat ?? this.cat,
+        group: group.present ? group.value : this.group,
+        shortDescription: shortDescription.present
+            ? shortDescription.value
+            : this.shortDescription,
+        note: note.present ? note.value : this.note,
+      );
+  DbService copyWithCompanion(ServicesCompanion data) {
+    return DbService(
+      code: data.code.present ? data.code.value : this.code,
+      name: data.name.present ? data.name.value : this.name,
+      cat: data.cat.present ? data.cat.value : this.cat,
+      group: data.group.present ? data.group.value : this.group,
+      shortDescription: data.shortDescription.present
+          ? data.shortDescription.value
+          : this.shortDescription,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DbService(')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('cat: $cat, ')
+          ..write('group: $group, ')
+          ..write('shortDescription: $shortDescription, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(code, name, cat, group, shortDescription, note);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DbService &&
+          other.code == this.code &&
+          other.name == this.name &&
+          other.cat == this.cat &&
+          other.group == this.group &&
+          other.shortDescription == this.shortDescription &&
+          other.note == this.note);
+}
+
+class ServicesCompanion extends UpdateCompanion<DbService> {
+  final Value<String> code;
+  final Value<String> name;
+  final Value<String> cat;
+  final Value<String?> group;
+  final Value<String?> shortDescription;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const ServicesCompanion({
+    this.code = const Value.absent(),
+    this.name = const Value.absent(),
+    this.cat = const Value.absent(),
+    this.group = const Value.absent(),
+    this.shortDescription = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServicesCompanion.insert({
+    required String code,
+    required String name,
+    required String cat,
+    this.group = const Value.absent(),
+    this.shortDescription = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : code = Value(code),
+        name = Value(name),
+        cat = Value(cat);
+  static Insertable<DbService> custom({
+    Expression<String>? code,
+    Expression<String>? name,
+    Expression<String>? cat,
+    Expression<String>? group,
+    Expression<String>? shortDescription,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (code != null) 'code': code,
+      if (name != null) 'name': name,
+      if (cat != null) 'cat': cat,
+      if (group != null) 'group': group,
+      if (shortDescription != null) 'short_description': shortDescription,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServicesCompanion copyWith(
+      {Value<String>? code,
+      Value<String>? name,
+      Value<String>? cat,
+      Value<String?>? group,
+      Value<String?>? shortDescription,
+      Value<String?>? note,
+      Value<int>? rowid}) {
+    return ServicesCompanion(
+      code: code ?? this.code,
+      name: name ?? this.name,
+      cat: cat ?? this.cat,
+      group: group ?? this.group,
+      shortDescription: shortDescription ?? this.shortDescription,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (cat.present) {
+      map['cat'] = Variable<String>(cat.value);
+    }
+    if (group.present) {
+      map['group'] = Variable<String>(group.value);
+    }
+    if (shortDescription.present) {
+      map['short_description'] = Variable<String>(shortDescription.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServicesCompanion(')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('cat: $cat, ')
+          ..write('group: $group, ')
+          ..write('shortDescription: $shortDescription, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ServiceFieldsTable extends ServiceFields
+    with TableInfo<$ServiceFieldsTable, DbServiceField> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServiceFieldsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _serviceCodeMeta =
+      const VerificationMeta('serviceCode');
+  @override
+  late final GeneratedColumn<String> serviceCode = GeneratedColumn<String>(
+      'service_code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+      'type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _stepMeta = const VerificationMeta('step');
+  @override
+  late final GeneratedColumn<double> step = GeneratedColumn<double>(
+      'step', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _minMeta = const VerificationMeta('min');
+  @override
+  late final GeneratedColumn<double> min = GeneratedColumn<double>(
+      'min', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _defMeta = const VerificationMeta('def');
+  @override
+  late final GeneratedColumn<double> def = GeneratedColumn<double>(
+      'def', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _optionsJsonMeta =
+      const VerificationMeta('optionsJson');
+  @override
+  late final GeneratedColumn<String> optionsJson = GeneratedColumn<String>(
+      'options_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, serviceCode, key, label, type, step, min, def, optionsJson];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'service_fields';
+  @override
+  VerificationContext validateIntegrity(Insertable<DbServiceField> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('service_code')) {
+      context.handle(
+          _serviceCodeMeta,
+          serviceCode.isAcceptableOrUnknown(
+              data['service_code']!, _serviceCodeMeta));
+    } else if (isInserting) {
+      context.missing(_serviceCodeMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('step')) {
+      context.handle(
+          _stepMeta, step.isAcceptableOrUnknown(data['step']!, _stepMeta));
+    }
+    if (data.containsKey('min')) {
+      context.handle(
+          _minMeta, min.isAcceptableOrUnknown(data['min']!, _minMeta));
+    }
+    if (data.containsKey('def')) {
+      context.handle(
+          _defMeta, def.isAcceptableOrUnknown(data['def']!, _defMeta));
+    }
+    if (data.containsKey('options_json')) {
+      context.handle(
+          _optionsJsonMeta,
+          optionsJson.isAcceptableOrUnknown(
+              data['options_json']!, _optionsJsonMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DbServiceField map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DbServiceField(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      serviceCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}service_code'])!,
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      label: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!,
+      type: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
+      step: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}step']),
+      min: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}min']),
+      def: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}def']),
+      optionsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}options_json']),
+    );
+  }
+
+  @override
+  $ServiceFieldsTable createAlias(String alias) {
+    return $ServiceFieldsTable(attachedDatabase, alias);
+  }
+}
+
+class DbServiceField extends DataClass implements Insertable<DbServiceField> {
+  final int id;
+  final String serviceCode;
+  final String key;
+  final String label;
+  final String type;
+  final double? step;
+  final double? min;
+  final double? def;
+  final String? optionsJson;
+  const DbServiceField(
+      {required this.id,
+      required this.serviceCode,
+      required this.key,
+      required this.label,
+      required this.type,
+      this.step,
+      this.min,
+      this.def,
+      this.optionsJson});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['service_code'] = Variable<String>(serviceCode);
+    map['key'] = Variable<String>(key);
+    map['label'] = Variable<String>(label);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || step != null) {
+      map['step'] = Variable<double>(step);
+    }
+    if (!nullToAbsent || min != null) {
+      map['min'] = Variable<double>(min);
+    }
+    if (!nullToAbsent || def != null) {
+      map['def'] = Variable<double>(def);
+    }
+    if (!nullToAbsent || optionsJson != null) {
+      map['options_json'] = Variable<String>(optionsJson);
+    }
+    return map;
+  }
+
+  ServiceFieldsCompanion toCompanion(bool nullToAbsent) {
+    return ServiceFieldsCompanion(
+      id: Value(id),
+      serviceCode: Value(serviceCode),
+      key: Value(key),
+      label: Value(label),
+      type: Value(type),
+      step: step == null && nullToAbsent ? const Value.absent() : Value(step),
+      min: min == null && nullToAbsent ? const Value.absent() : Value(min),
+      def: def == null && nullToAbsent ? const Value.absent() : Value(def),
+      optionsJson: optionsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(optionsJson),
+    );
+  }
+
+  factory DbServiceField.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DbServiceField(
+      id: serializer.fromJson<int>(json['id']),
+      serviceCode: serializer.fromJson<String>(json['serviceCode']),
+      key: serializer.fromJson<String>(json['key']),
+      label: serializer.fromJson<String>(json['label']),
+      type: serializer.fromJson<String>(json['type']),
+      step: serializer.fromJson<double?>(json['step']),
+      min: serializer.fromJson<double?>(json['min']),
+      def: serializer.fromJson<double?>(json['def']),
+      optionsJson: serializer.fromJson<String?>(json['optionsJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'serviceCode': serializer.toJson<String>(serviceCode),
+      'key': serializer.toJson<String>(key),
+      'label': serializer.toJson<String>(label),
+      'type': serializer.toJson<String>(type),
+      'step': serializer.toJson<double?>(step),
+      'min': serializer.toJson<double?>(min),
+      'def': serializer.toJson<double?>(def),
+      'optionsJson': serializer.toJson<String?>(optionsJson),
+    };
+  }
+
+  DbServiceField copyWith(
+          {int? id,
+          String? serviceCode,
+          String? key,
+          String? label,
+          String? type,
+          Value<double?> step = const Value.absent(),
+          Value<double?> min = const Value.absent(),
+          Value<double?> def = const Value.absent(),
+          Value<String?> optionsJson = const Value.absent()}) =>
+      DbServiceField(
+        id: id ?? this.id,
+        serviceCode: serviceCode ?? this.serviceCode,
+        key: key ?? this.key,
+        label: label ?? this.label,
+        type: type ?? this.type,
+        step: step.present ? step.value : this.step,
+        min: min.present ? min.value : this.min,
+        def: def.present ? def.value : this.def,
+        optionsJson: optionsJson.present ? optionsJson.value : this.optionsJson,
+      );
+  DbServiceField copyWithCompanion(ServiceFieldsCompanion data) {
+    return DbServiceField(
+      id: data.id.present ? data.id.value : this.id,
+      serviceCode:
+          data.serviceCode.present ? data.serviceCode.value : this.serviceCode,
+      key: data.key.present ? data.key.value : this.key,
+      label: data.label.present ? data.label.value : this.label,
+      type: data.type.present ? data.type.value : this.type,
+      step: data.step.present ? data.step.value : this.step,
+      min: data.min.present ? data.min.value : this.min,
+      def: data.def.present ? data.def.value : this.def,
+      optionsJson:
+          data.optionsJson.present ? data.optionsJson.value : this.optionsJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DbServiceField(')
+          ..write('id: $id, ')
+          ..write('serviceCode: $serviceCode, ')
+          ..write('key: $key, ')
+          ..write('label: $label, ')
+          ..write('type: $type, ')
+          ..write('step: $step, ')
+          ..write('min: $min, ')
+          ..write('def: $def, ')
+          ..write('optionsJson: $optionsJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, serviceCode, key, label, type, step, min, def, optionsJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DbServiceField &&
+          other.id == this.id &&
+          other.serviceCode == this.serviceCode &&
+          other.key == this.key &&
+          other.label == this.label &&
+          other.type == this.type &&
+          other.step == this.step &&
+          other.min == this.min &&
+          other.def == this.def &&
+          other.optionsJson == this.optionsJson);
+}
+
+class ServiceFieldsCompanion extends UpdateCompanion<DbServiceField> {
+  final Value<int> id;
+  final Value<String> serviceCode;
+  final Value<String> key;
+  final Value<String> label;
+  final Value<String> type;
+  final Value<double?> step;
+  final Value<double?> min;
+  final Value<double?> def;
+  final Value<String?> optionsJson;
+  const ServiceFieldsCompanion({
+    this.id = const Value.absent(),
+    this.serviceCode = const Value.absent(),
+    this.key = const Value.absent(),
+    this.label = const Value.absent(),
+    this.type = const Value.absent(),
+    this.step = const Value.absent(),
+    this.min = const Value.absent(),
+    this.def = const Value.absent(),
+    this.optionsJson = const Value.absent(),
+  });
+  ServiceFieldsCompanion.insert({
+    this.id = const Value.absent(),
+    required String serviceCode,
+    required String key,
+    required String label,
+    required String type,
+    this.step = const Value.absent(),
+    this.min = const Value.absent(),
+    this.def = const Value.absent(),
+    this.optionsJson = const Value.absent(),
+  })  : serviceCode = Value(serviceCode),
+        key = Value(key),
+        label = Value(label),
+        type = Value(type);
+  static Insertable<DbServiceField> custom({
+    Expression<int>? id,
+    Expression<String>? serviceCode,
+    Expression<String>? key,
+    Expression<String>? label,
+    Expression<String>? type,
+    Expression<double>? step,
+    Expression<double>? min,
+    Expression<double>? def,
+    Expression<String>? optionsJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (serviceCode != null) 'service_code': serviceCode,
+      if (key != null) 'key': key,
+      if (label != null) 'label': label,
+      if (type != null) 'type': type,
+      if (step != null) 'step': step,
+      if (min != null) 'min': min,
+      if (def != null) 'def': def,
+      if (optionsJson != null) 'options_json': optionsJson,
+    });
+  }
+
+  ServiceFieldsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? serviceCode,
+      Value<String>? key,
+      Value<String>? label,
+      Value<String>? type,
+      Value<double?>? step,
+      Value<double?>? min,
+      Value<double?>? def,
+      Value<String?>? optionsJson}) {
+    return ServiceFieldsCompanion(
+      id: id ?? this.id,
+      serviceCode: serviceCode ?? this.serviceCode,
+      key: key ?? this.key,
+      label: label ?? this.label,
+      type: type ?? this.type,
+      step: step ?? this.step,
+      min: min ?? this.min,
+      def: def ?? this.def,
+      optionsJson: optionsJson ?? this.optionsJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (serviceCode.present) {
+      map['service_code'] = Variable<String>(serviceCode.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (step.present) {
+      map['step'] = Variable<double>(step.value);
+    }
+    if (min.present) {
+      map['min'] = Variable<double>(min.value);
+    }
+    if (def.present) {
+      map['def'] = Variable<double>(def.value);
+    }
+    if (optionsJson.present) {
+      map['options_json'] = Variable<String>(optionsJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceFieldsCompanion(')
+          ..write('id: $id, ')
+          ..write('serviceCode: $serviceCode, ')
+          ..write('key: $key, ')
+          ..write('label: $label, ')
+          ..write('type: $type, ')
+          ..write('step: $step, ')
+          ..write('min: $min, ')
+          ..write('def: $def, ')
+          ..write('optionsJson: $optionsJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ServiceRatesTable extends ServiceRates
+    with TableInfo<$ServiceRatesTable, DbServiceRate> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServiceRatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _serviceCodeMeta =
+      const VerificationMeta('serviceCode');
+  @override
+  late final GeneratedColumn<String> serviceCode = GeneratedColumn<String>(
+      'service_code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _regionCodeMeta =
+      const VerificationMeta('regionCode');
+  @override
+  late final GeneratedColumn<String> regionCode = GeneratedColumn<String>(
+      'region_code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _rateKeyMeta =
+      const VerificationMeta('rateKey');
+  @override
+  late final GeneratedColumn<String> rateKey = GeneratedColumn<String>(
+      'rate_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+      'value', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [serviceCode, regionCode, rateKey, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'service_rates';
+  @override
+  VerificationContext validateIntegrity(Insertable<DbServiceRate> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('service_code')) {
+      context.handle(
+          _serviceCodeMeta,
+          serviceCode.isAcceptableOrUnknown(
+              data['service_code']!, _serviceCodeMeta));
+    } else if (isInserting) {
+      context.missing(_serviceCodeMeta);
+    }
+    if (data.containsKey('region_code')) {
+      context.handle(
+          _regionCodeMeta,
+          regionCode.isAcceptableOrUnknown(
+              data['region_code']!, _regionCodeMeta));
+    } else if (isInserting) {
+      context.missing(_regionCodeMeta);
+    }
+    if (data.containsKey('rate_key')) {
+      context.handle(_rateKeyMeta,
+          rateKey.isAcceptableOrUnknown(data['rate_key']!, _rateKeyMeta));
+    } else if (isInserting) {
+      context.missing(_rateKeyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {serviceCode, regionCode, rateKey};
+  @override
+  DbServiceRate map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DbServiceRate(
+      serviceCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}service_code'])!,
+      regionCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}region_code'])!,
+      rateKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rate_key'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}value'])!,
+    );
+  }
+
+  @override
+  $ServiceRatesTable createAlias(String alias) {
+    return $ServiceRatesTable(attachedDatabase, alias);
+  }
+}
+
+class DbServiceRate extends DataClass implements Insertable<DbServiceRate> {
+  final String serviceCode;
+  final String regionCode;
+  final String rateKey;
+  final double value;
+  const DbServiceRate(
+      {required this.serviceCode,
+      required this.regionCode,
+      required this.rateKey,
+      required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['service_code'] = Variable<String>(serviceCode);
+    map['region_code'] = Variable<String>(regionCode);
+    map['rate_key'] = Variable<String>(rateKey);
+    map['value'] = Variable<double>(value);
+    return map;
+  }
+
+  ServiceRatesCompanion toCompanion(bool nullToAbsent) {
+    return ServiceRatesCompanion(
+      serviceCode: Value(serviceCode),
+      regionCode: Value(regionCode),
+      rateKey: Value(rateKey),
+      value: Value(value),
+    );
+  }
+
+  factory DbServiceRate.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DbServiceRate(
+      serviceCode: serializer.fromJson<String>(json['serviceCode']),
+      regionCode: serializer.fromJson<String>(json['regionCode']),
+      rateKey: serializer.fromJson<String>(json['rateKey']),
+      value: serializer.fromJson<double>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'serviceCode': serializer.toJson<String>(serviceCode),
+      'regionCode': serializer.toJson<String>(regionCode),
+      'rateKey': serializer.toJson<String>(rateKey),
+      'value': serializer.toJson<double>(value),
+    };
+  }
+
+  DbServiceRate copyWith(
+          {String? serviceCode,
+          String? regionCode,
+          String? rateKey,
+          double? value}) =>
+      DbServiceRate(
+        serviceCode: serviceCode ?? this.serviceCode,
+        regionCode: regionCode ?? this.regionCode,
+        rateKey: rateKey ?? this.rateKey,
+        value: value ?? this.value,
+      );
+  DbServiceRate copyWithCompanion(ServiceRatesCompanion data) {
+    return DbServiceRate(
+      serviceCode:
+          data.serviceCode.present ? data.serviceCode.value : this.serviceCode,
+      regionCode:
+          data.regionCode.present ? data.regionCode.value : this.regionCode,
+      rateKey: data.rateKey.present ? data.rateKey.value : this.rateKey,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DbServiceRate(')
+          ..write('serviceCode: $serviceCode, ')
+          ..write('regionCode: $regionCode, ')
+          ..write('rateKey: $rateKey, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(serviceCode, regionCode, rateKey, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DbServiceRate &&
+          other.serviceCode == this.serviceCode &&
+          other.regionCode == this.regionCode &&
+          other.rateKey == this.rateKey &&
+          other.value == this.value);
+}
+
+class ServiceRatesCompanion extends UpdateCompanion<DbServiceRate> {
+  final Value<String> serviceCode;
+  final Value<String> regionCode;
+  final Value<String> rateKey;
+  final Value<double> value;
+  final Value<int> rowid;
+  const ServiceRatesCompanion({
+    this.serviceCode = const Value.absent(),
+    this.regionCode = const Value.absent(),
+    this.rateKey = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServiceRatesCompanion.insert({
+    required String serviceCode,
+    required String regionCode,
+    required String rateKey,
+    required double value,
+    this.rowid = const Value.absent(),
+  })  : serviceCode = Value(serviceCode),
+        regionCode = Value(regionCode),
+        rateKey = Value(rateKey),
+        value = Value(value);
+  static Insertable<DbServiceRate> custom({
+    Expression<String>? serviceCode,
+    Expression<String>? regionCode,
+    Expression<String>? rateKey,
+    Expression<double>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (serviceCode != null) 'service_code': serviceCode,
+      if (regionCode != null) 'region_code': regionCode,
+      if (rateKey != null) 'rate_key': rateKey,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServiceRatesCompanion copyWith(
+      {Value<String>? serviceCode,
+      Value<String>? regionCode,
+      Value<String>? rateKey,
+      Value<double>? value,
+      Value<int>? rowid}) {
+    return ServiceRatesCompanion(
+      serviceCode: serviceCode ?? this.serviceCode,
+      regionCode: regionCode ?? this.regionCode,
+      rateKey: rateKey ?? this.rateKey,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (serviceCode.present) {
+      map['service_code'] = Variable<String>(serviceCode.value);
+    }
+    if (regionCode.present) {
+      map['region_code'] = Variable<String>(regionCode.value);
+    }
+    if (rateKey.present) {
+      map['rate_key'] = Variable<String>(rateKey.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceRatesCompanion(')
+          ..write('serviceCode: $serviceCode, ')
+          ..write('regionCode: $regionCode, ')
+          ..write('rateKey: $rateKey, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RateLabelsTable extends RateLabels
+    with TableInfo<$RateLabelsTable, DbRateLabel> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RateLabelsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _serviceCodeMeta =
+      const VerificationMeta('serviceCode');
+  @override
+  late final GeneratedColumn<String> serviceCode = GeneratedColumn<String>(
+      'service_code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _rateKeyMeta =
+      const VerificationMeta('rateKey');
+  @override
+  late final GeneratedColumn<String> rateKey = GeneratedColumn<String>(
+      'rate_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [serviceCode, rateKey, label];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rate_labels';
+  @override
+  VerificationContext validateIntegrity(Insertable<DbRateLabel> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('service_code')) {
+      context.handle(
+          _serviceCodeMeta,
+          serviceCode.isAcceptableOrUnknown(
+              data['service_code']!, _serviceCodeMeta));
+    } else if (isInserting) {
+      context.missing(_serviceCodeMeta);
+    }
+    if (data.containsKey('rate_key')) {
+      context.handle(_rateKeyMeta,
+          rateKey.isAcceptableOrUnknown(data['rate_key']!, _rateKeyMeta));
+    } else if (isInserting) {
+      context.missing(_rateKeyMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {serviceCode, rateKey};
+  @override
+  DbRateLabel map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DbRateLabel(
+      serviceCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}service_code'])!,
+      rateKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rate_key'])!,
+      label: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!,
+    );
+  }
+
+  @override
+  $RateLabelsTable createAlias(String alias) {
+    return $RateLabelsTable(attachedDatabase, alias);
+  }
+}
+
+class DbRateLabel extends DataClass implements Insertable<DbRateLabel> {
+  final String serviceCode;
+  final String rateKey;
+  final String label;
+  const DbRateLabel(
+      {required this.serviceCode, required this.rateKey, required this.label});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['service_code'] = Variable<String>(serviceCode);
+    map['rate_key'] = Variable<String>(rateKey);
+    map['label'] = Variable<String>(label);
+    return map;
+  }
+
+  RateLabelsCompanion toCompanion(bool nullToAbsent) {
+    return RateLabelsCompanion(
+      serviceCode: Value(serviceCode),
+      rateKey: Value(rateKey),
+      label: Value(label),
+    );
+  }
+
+  factory DbRateLabel.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DbRateLabel(
+      serviceCode: serializer.fromJson<String>(json['serviceCode']),
+      rateKey: serializer.fromJson<String>(json['rateKey']),
+      label: serializer.fromJson<String>(json['label']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'serviceCode': serializer.toJson<String>(serviceCode),
+      'rateKey': serializer.toJson<String>(rateKey),
+      'label': serializer.toJson<String>(label),
+    };
+  }
+
+  DbRateLabel copyWith({String? serviceCode, String? rateKey, String? label}) =>
+      DbRateLabel(
+        serviceCode: serviceCode ?? this.serviceCode,
+        rateKey: rateKey ?? this.rateKey,
+        label: label ?? this.label,
+      );
+  DbRateLabel copyWithCompanion(RateLabelsCompanion data) {
+    return DbRateLabel(
+      serviceCode:
+          data.serviceCode.present ? data.serviceCode.value : this.serviceCode,
+      rateKey: data.rateKey.present ? data.rateKey.value : this.rateKey,
+      label: data.label.present ? data.label.value : this.label,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DbRateLabel(')
+          ..write('serviceCode: $serviceCode, ')
+          ..write('rateKey: $rateKey, ')
+          ..write('label: $label')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(serviceCode, rateKey, label);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DbRateLabel &&
+          other.serviceCode == this.serviceCode &&
+          other.rateKey == this.rateKey &&
+          other.label == this.label);
+}
+
+class RateLabelsCompanion extends UpdateCompanion<DbRateLabel> {
+  final Value<String> serviceCode;
+  final Value<String> rateKey;
+  final Value<String> label;
+  final Value<int> rowid;
+  const RateLabelsCompanion({
+    this.serviceCode = const Value.absent(),
+    this.rateKey = const Value.absent(),
+    this.label = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RateLabelsCompanion.insert({
+    required String serviceCode,
+    required String rateKey,
+    required String label,
+    this.rowid = const Value.absent(),
+  })  : serviceCode = Value(serviceCode),
+        rateKey = Value(rateKey),
+        label = Value(label);
+  static Insertable<DbRateLabel> custom({
+    Expression<String>? serviceCode,
+    Expression<String>? rateKey,
+    Expression<String>? label,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (serviceCode != null) 'service_code': serviceCode,
+      if (rateKey != null) 'rate_key': rateKey,
+      if (label != null) 'label': label,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RateLabelsCompanion copyWith(
+      {Value<String>? serviceCode,
+      Value<String>? rateKey,
+      Value<String>? label,
+      Value<int>? rowid}) {
+    return RateLabelsCompanion(
+      serviceCode: serviceCode ?? this.serviceCode,
+      rateKey: rateKey ?? this.rateKey,
+      label: label ?? this.label,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (serviceCode.present) {
+      map['service_code'] = Variable<String>(serviceCode.value);
+    }
+    if (rateKey.present) {
+      map['rate_key'] = Variable<String>(rateKey.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RateLabelsCompanion(')
+          ..write('serviceCode: $serviceCode, ')
+          ..write('rateKey: $rateKey, ')
+          ..write('label: $label, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1466,12 +3042,28 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RateOverridesTable rateOverrides = $RateOverridesTable(this);
   late final $PaymentsTable payments = $PaymentsTable(this);
   late final $AppointmentsTable appointments = $AppointmentsTable(this);
+  late final $ServiceCategoriesTable serviceCategories =
+      $ServiceCategoriesTable(this);
+  late final $ServicesTable services = $ServicesTable(this);
+  late final $ServiceFieldsTable serviceFields = $ServiceFieldsTable(this);
+  late final $ServiceRatesTable serviceRates = $ServiceRatesTable(this);
+  late final $RateLabelsTable rateLabels = $RateLabelsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [quotes, quoteItems, rateOverrides, payments, appointments];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        quotes,
+        quoteItems,
+        rateOverrides,
+        payments,
+        appointments,
+        serviceCategories,
+        services,
+        serviceFields,
+        serviceRates,
+        rateLabels
+      ];
 }
 
 typedef $$QuotesTableCreateCompanionBuilder = QuotesCompanion Function({
@@ -2468,6 +4060,868 @@ typedef $$AppointmentsTableProcessedTableManager = ProcessedTableManager<
     ),
     Appointment,
     PrefetchHooks Function()>;
+typedef $$ServiceCategoriesTableCreateCompanionBuilder
+    = ServiceCategoriesCompanion Function({
+  required String key,
+  required String label,
+  required String color,
+  required String iconName,
+  Value<int> rowid,
+});
+typedef $$ServiceCategoriesTableUpdateCompanionBuilder
+    = ServiceCategoriesCompanion Function({
+  Value<String> key,
+  Value<String> label,
+  Value<String> color,
+  Value<String> iconName,
+  Value<int> rowid,
+});
+
+class $$ServiceCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ServiceCategoriesTable> {
+  $$ServiceCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get iconName => $composableBuilder(
+      column: $table.iconName, builder: (column) => ColumnFilters(column));
+}
+
+class $$ServiceCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ServiceCategoriesTable> {
+  $$ServiceCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get iconName => $composableBuilder(
+      column: $table.iconName, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ServiceCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ServiceCategoriesTable> {
+  $$ServiceCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get iconName =>
+      $composableBuilder(column: $table.iconName, builder: (column) => column);
+}
+
+class $$ServiceCategoriesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ServiceCategoriesTable,
+    DbServiceCategory,
+    $$ServiceCategoriesTableFilterComposer,
+    $$ServiceCategoriesTableOrderingComposer,
+    $$ServiceCategoriesTableAnnotationComposer,
+    $$ServiceCategoriesTableCreateCompanionBuilder,
+    $$ServiceCategoriesTableUpdateCompanionBuilder,
+    (
+      DbServiceCategory,
+      BaseReferences<_$AppDatabase, $ServiceCategoriesTable, DbServiceCategory>
+    ),
+    DbServiceCategory,
+    PrefetchHooks Function()> {
+  $$ServiceCategoriesTableTableManager(
+      _$AppDatabase db, $ServiceCategoriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServiceCategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServiceCategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServiceCategoriesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> label = const Value.absent(),
+            Value<String> color = const Value.absent(),
+            Value<String> iconName = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ServiceCategoriesCompanion(
+            key: key,
+            label: label,
+            color: color,
+            iconName: iconName,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String key,
+            required String label,
+            required String color,
+            required String iconName,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ServiceCategoriesCompanion.insert(
+            key: key,
+            label: label,
+            color: color,
+            iconName: iconName,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ServiceCategoriesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ServiceCategoriesTable,
+    DbServiceCategory,
+    $$ServiceCategoriesTableFilterComposer,
+    $$ServiceCategoriesTableOrderingComposer,
+    $$ServiceCategoriesTableAnnotationComposer,
+    $$ServiceCategoriesTableCreateCompanionBuilder,
+    $$ServiceCategoriesTableUpdateCompanionBuilder,
+    (
+      DbServiceCategory,
+      BaseReferences<_$AppDatabase, $ServiceCategoriesTable, DbServiceCategory>
+    ),
+    DbServiceCategory,
+    PrefetchHooks Function()>;
+typedef $$ServicesTableCreateCompanionBuilder = ServicesCompanion Function({
+  required String code,
+  required String name,
+  required String cat,
+  Value<String?> group,
+  Value<String?> shortDescription,
+  Value<String?> note,
+  Value<int> rowid,
+});
+typedef $$ServicesTableUpdateCompanionBuilder = ServicesCompanion Function({
+  Value<String> code,
+  Value<String> name,
+  Value<String> cat,
+  Value<String?> group,
+  Value<String?> shortDescription,
+  Value<String?> note,
+  Value<int> rowid,
+});
+
+class $$ServicesTableFilterComposer
+    extends Composer<_$AppDatabase, $ServicesTable> {
+  $$ServicesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get code => $composableBuilder(
+      column: $table.code, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get cat => $composableBuilder(
+      column: $table.cat, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get group => $composableBuilder(
+      column: $table.group, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get shortDescription => $composableBuilder(
+      column: $table.shortDescription,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get note => $composableBuilder(
+      column: $table.note, builder: (column) => ColumnFilters(column));
+}
+
+class $$ServicesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ServicesTable> {
+  $$ServicesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get code => $composableBuilder(
+      column: $table.code, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get cat => $composableBuilder(
+      column: $table.cat, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get group => $composableBuilder(
+      column: $table.group, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get shortDescription => $composableBuilder(
+      column: $table.shortDescription,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get note => $composableBuilder(
+      column: $table.note, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ServicesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ServicesTable> {
+  $$ServicesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get cat =>
+      $composableBuilder(column: $table.cat, builder: (column) => column);
+
+  GeneratedColumn<String> get group =>
+      $composableBuilder(column: $table.group, builder: (column) => column);
+
+  GeneratedColumn<String> get shortDescription => $composableBuilder(
+      column: $table.shortDescription, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+}
+
+class $$ServicesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ServicesTable,
+    DbService,
+    $$ServicesTableFilterComposer,
+    $$ServicesTableOrderingComposer,
+    $$ServicesTableAnnotationComposer,
+    $$ServicesTableCreateCompanionBuilder,
+    $$ServicesTableUpdateCompanionBuilder,
+    (DbService, BaseReferences<_$AppDatabase, $ServicesTable, DbService>),
+    DbService,
+    PrefetchHooks Function()> {
+  $$ServicesTableTableManager(_$AppDatabase db, $ServicesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServicesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServicesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServicesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> code = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> cat = const Value.absent(),
+            Value<String?> group = const Value.absent(),
+            Value<String?> shortDescription = const Value.absent(),
+            Value<String?> note = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ServicesCompanion(
+            code: code,
+            name: name,
+            cat: cat,
+            group: group,
+            shortDescription: shortDescription,
+            note: note,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String code,
+            required String name,
+            required String cat,
+            Value<String?> group = const Value.absent(),
+            Value<String?> shortDescription = const Value.absent(),
+            Value<String?> note = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ServicesCompanion.insert(
+            code: code,
+            name: name,
+            cat: cat,
+            group: group,
+            shortDescription: shortDescription,
+            note: note,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ServicesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ServicesTable,
+    DbService,
+    $$ServicesTableFilterComposer,
+    $$ServicesTableOrderingComposer,
+    $$ServicesTableAnnotationComposer,
+    $$ServicesTableCreateCompanionBuilder,
+    $$ServicesTableUpdateCompanionBuilder,
+    (DbService, BaseReferences<_$AppDatabase, $ServicesTable, DbService>),
+    DbService,
+    PrefetchHooks Function()>;
+typedef $$ServiceFieldsTableCreateCompanionBuilder = ServiceFieldsCompanion
+    Function({
+  Value<int> id,
+  required String serviceCode,
+  required String key,
+  required String label,
+  required String type,
+  Value<double?> step,
+  Value<double?> min,
+  Value<double?> def,
+  Value<String?> optionsJson,
+});
+typedef $$ServiceFieldsTableUpdateCompanionBuilder = ServiceFieldsCompanion
+    Function({
+  Value<int> id,
+  Value<String> serviceCode,
+  Value<String> key,
+  Value<String> label,
+  Value<String> type,
+  Value<double?> step,
+  Value<double?> min,
+  Value<double?> def,
+  Value<String?> optionsJson,
+});
+
+class $$ServiceFieldsTableFilterComposer
+    extends Composer<_$AppDatabase, $ServiceFieldsTable> {
+  $$ServiceFieldsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get step => $composableBuilder(
+      column: $table.step, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get min => $composableBuilder(
+      column: $table.min, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get def => $composableBuilder(
+      column: $table.def, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get optionsJson => $composableBuilder(
+      column: $table.optionsJson, builder: (column) => ColumnFilters(column));
+}
+
+class $$ServiceFieldsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ServiceFieldsTable> {
+  $$ServiceFieldsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get step => $composableBuilder(
+      column: $table.step, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get min => $composableBuilder(
+      column: $table.min, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get def => $composableBuilder(
+      column: $table.def, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get optionsJson => $composableBuilder(
+      column: $table.optionsJson, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ServiceFieldsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ServiceFieldsTable> {
+  $$ServiceFieldsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<double> get step =>
+      $composableBuilder(column: $table.step, builder: (column) => column);
+
+  GeneratedColumn<double> get min =>
+      $composableBuilder(column: $table.min, builder: (column) => column);
+
+  GeneratedColumn<double> get def =>
+      $composableBuilder(column: $table.def, builder: (column) => column);
+
+  GeneratedColumn<String> get optionsJson => $composableBuilder(
+      column: $table.optionsJson, builder: (column) => column);
+}
+
+class $$ServiceFieldsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ServiceFieldsTable,
+    DbServiceField,
+    $$ServiceFieldsTableFilterComposer,
+    $$ServiceFieldsTableOrderingComposer,
+    $$ServiceFieldsTableAnnotationComposer,
+    $$ServiceFieldsTableCreateCompanionBuilder,
+    $$ServiceFieldsTableUpdateCompanionBuilder,
+    (
+      DbServiceField,
+      BaseReferences<_$AppDatabase, $ServiceFieldsTable, DbServiceField>
+    ),
+    DbServiceField,
+    PrefetchHooks Function()> {
+  $$ServiceFieldsTableTableManager(_$AppDatabase db, $ServiceFieldsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServiceFieldsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServiceFieldsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServiceFieldsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> serviceCode = const Value.absent(),
+            Value<String> key = const Value.absent(),
+            Value<String> label = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<double?> step = const Value.absent(),
+            Value<double?> min = const Value.absent(),
+            Value<double?> def = const Value.absent(),
+            Value<String?> optionsJson = const Value.absent(),
+          }) =>
+              ServiceFieldsCompanion(
+            id: id,
+            serviceCode: serviceCode,
+            key: key,
+            label: label,
+            type: type,
+            step: step,
+            min: min,
+            def: def,
+            optionsJson: optionsJson,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String serviceCode,
+            required String key,
+            required String label,
+            required String type,
+            Value<double?> step = const Value.absent(),
+            Value<double?> min = const Value.absent(),
+            Value<double?> def = const Value.absent(),
+            Value<String?> optionsJson = const Value.absent(),
+          }) =>
+              ServiceFieldsCompanion.insert(
+            id: id,
+            serviceCode: serviceCode,
+            key: key,
+            label: label,
+            type: type,
+            step: step,
+            min: min,
+            def: def,
+            optionsJson: optionsJson,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ServiceFieldsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ServiceFieldsTable,
+    DbServiceField,
+    $$ServiceFieldsTableFilterComposer,
+    $$ServiceFieldsTableOrderingComposer,
+    $$ServiceFieldsTableAnnotationComposer,
+    $$ServiceFieldsTableCreateCompanionBuilder,
+    $$ServiceFieldsTableUpdateCompanionBuilder,
+    (
+      DbServiceField,
+      BaseReferences<_$AppDatabase, $ServiceFieldsTable, DbServiceField>
+    ),
+    DbServiceField,
+    PrefetchHooks Function()>;
+typedef $$ServiceRatesTableCreateCompanionBuilder = ServiceRatesCompanion
+    Function({
+  required String serviceCode,
+  required String regionCode,
+  required String rateKey,
+  required double value,
+  Value<int> rowid,
+});
+typedef $$ServiceRatesTableUpdateCompanionBuilder = ServiceRatesCompanion
+    Function({
+  Value<String> serviceCode,
+  Value<String> regionCode,
+  Value<String> rateKey,
+  Value<double> value,
+  Value<int> rowid,
+});
+
+class $$ServiceRatesTableFilterComposer
+    extends Composer<_$AppDatabase, $ServiceRatesTable> {
+  $$ServiceRatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get regionCode => $composableBuilder(
+      column: $table.regionCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get rateKey => $composableBuilder(
+      column: $table.rateKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+}
+
+class $$ServiceRatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ServiceRatesTable> {
+  $$ServiceRatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get regionCode => $composableBuilder(
+      column: $table.regionCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get rateKey => $composableBuilder(
+      column: $table.rateKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ServiceRatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ServiceRatesTable> {
+  $$ServiceRatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => column);
+
+  GeneratedColumn<String> get regionCode => $composableBuilder(
+      column: $table.regionCode, builder: (column) => column);
+
+  GeneratedColumn<String> get rateKey =>
+      $composableBuilder(column: $table.rateKey, builder: (column) => column);
+
+  GeneratedColumn<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$ServiceRatesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ServiceRatesTable,
+    DbServiceRate,
+    $$ServiceRatesTableFilterComposer,
+    $$ServiceRatesTableOrderingComposer,
+    $$ServiceRatesTableAnnotationComposer,
+    $$ServiceRatesTableCreateCompanionBuilder,
+    $$ServiceRatesTableUpdateCompanionBuilder,
+    (
+      DbServiceRate,
+      BaseReferences<_$AppDatabase, $ServiceRatesTable, DbServiceRate>
+    ),
+    DbServiceRate,
+    PrefetchHooks Function()> {
+  $$ServiceRatesTableTableManager(_$AppDatabase db, $ServiceRatesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServiceRatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServiceRatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServiceRatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> serviceCode = const Value.absent(),
+            Value<String> regionCode = const Value.absent(),
+            Value<String> rateKey = const Value.absent(),
+            Value<double> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ServiceRatesCompanion(
+            serviceCode: serviceCode,
+            regionCode: regionCode,
+            rateKey: rateKey,
+            value: value,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String serviceCode,
+            required String regionCode,
+            required String rateKey,
+            required double value,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ServiceRatesCompanion.insert(
+            serviceCode: serviceCode,
+            regionCode: regionCode,
+            rateKey: rateKey,
+            value: value,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ServiceRatesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ServiceRatesTable,
+    DbServiceRate,
+    $$ServiceRatesTableFilterComposer,
+    $$ServiceRatesTableOrderingComposer,
+    $$ServiceRatesTableAnnotationComposer,
+    $$ServiceRatesTableCreateCompanionBuilder,
+    $$ServiceRatesTableUpdateCompanionBuilder,
+    (
+      DbServiceRate,
+      BaseReferences<_$AppDatabase, $ServiceRatesTable, DbServiceRate>
+    ),
+    DbServiceRate,
+    PrefetchHooks Function()>;
+typedef $$RateLabelsTableCreateCompanionBuilder = RateLabelsCompanion Function({
+  required String serviceCode,
+  required String rateKey,
+  required String label,
+  Value<int> rowid,
+});
+typedef $$RateLabelsTableUpdateCompanionBuilder = RateLabelsCompanion Function({
+  Value<String> serviceCode,
+  Value<String> rateKey,
+  Value<String> label,
+  Value<int> rowid,
+});
+
+class $$RateLabelsTableFilterComposer
+    extends Composer<_$AppDatabase, $RateLabelsTable> {
+  $$RateLabelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get rateKey => $composableBuilder(
+      column: $table.rateKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnFilters(column));
+}
+
+class $$RateLabelsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RateLabelsTable> {
+  $$RateLabelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get rateKey => $composableBuilder(
+      column: $table.rateKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RateLabelsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RateLabelsTable> {
+  $$RateLabelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get serviceCode => $composableBuilder(
+      column: $table.serviceCode, builder: (column) => column);
+
+  GeneratedColumn<String> get rateKey =>
+      $composableBuilder(column: $table.rateKey, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+}
+
+class $$RateLabelsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RateLabelsTable,
+    DbRateLabel,
+    $$RateLabelsTableFilterComposer,
+    $$RateLabelsTableOrderingComposer,
+    $$RateLabelsTableAnnotationComposer,
+    $$RateLabelsTableCreateCompanionBuilder,
+    $$RateLabelsTableUpdateCompanionBuilder,
+    (DbRateLabel, BaseReferences<_$AppDatabase, $RateLabelsTable, DbRateLabel>),
+    DbRateLabel,
+    PrefetchHooks Function()> {
+  $$RateLabelsTableTableManager(_$AppDatabase db, $RateLabelsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RateLabelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RateLabelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RateLabelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> serviceCode = const Value.absent(),
+            Value<String> rateKey = const Value.absent(),
+            Value<String> label = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RateLabelsCompanion(
+            serviceCode: serviceCode,
+            rateKey: rateKey,
+            label: label,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String serviceCode,
+            required String rateKey,
+            required String label,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RateLabelsCompanion.insert(
+            serviceCode: serviceCode,
+            rateKey: rateKey,
+            label: label,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RateLabelsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RateLabelsTable,
+    DbRateLabel,
+    $$RateLabelsTableFilterComposer,
+    $$RateLabelsTableOrderingComposer,
+    $$RateLabelsTableAnnotationComposer,
+    $$RateLabelsTableCreateCompanionBuilder,
+    $$RateLabelsTableUpdateCompanionBuilder,
+    (DbRateLabel, BaseReferences<_$AppDatabase, $RateLabelsTable, DbRateLabel>),
+    DbRateLabel,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2482,4 +4936,14 @@ class $AppDatabaseManager {
       $$PaymentsTableTableManager(_db, _db.payments);
   $$AppointmentsTableTableManager get appointments =>
       $$AppointmentsTableTableManager(_db, _db.appointments);
+  $$ServiceCategoriesTableTableManager get serviceCategories =>
+      $$ServiceCategoriesTableTableManager(_db, _db.serviceCategories);
+  $$ServicesTableTableManager get services =>
+      $$ServicesTableTableManager(_db, _db.services);
+  $$ServiceFieldsTableTableManager get serviceFields =>
+      $$ServiceFieldsTableTableManager(_db, _db.serviceFields);
+  $$ServiceRatesTableTableManager get serviceRates =>
+      $$ServiceRatesTableTableManager(_db, _db.serviceRates);
+  $$RateLabelsTableTableManager get rateLabels =>
+      $$RateLabelsTableTableManager(_db, _db.rateLabels);
 }

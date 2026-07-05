@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../core/constants.dart';
 import '../core/helpers.dart';
 import '../providers/quote_provider.dart';
 import '../services/export_service.dart';
@@ -77,17 +75,13 @@ class _PostAddPanelState extends State<PostAddPanel> with SingleTickerProviderSt
         position: _slideAnim,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              decoration: glassDecoration(
-                opacity: Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.35,
-                blur: 10,
-                radius: 16,
-                dark: Theme.of(context).brightness == Brightness.dark,
-              ),
-              child: Padding(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,

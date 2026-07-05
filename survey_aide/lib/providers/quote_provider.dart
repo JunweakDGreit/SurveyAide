@@ -12,6 +12,8 @@ class QuoteEntry {
   final List<TallyLine> lines;
   final String client;
   final String location;
+  final String billingAddress;
+  final double? overriddenTotal;
   final DateTime createdAt;
 
   QuoteEntry({
@@ -22,8 +24,12 @@ class QuoteEntry {
     required this.lines,
     required this.client,
     this.location = '',
+    this.billingAddress = '',
+    this.overriddenTotal,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  static const _sentinel = Object();
 
   QuoteEntry copyWith({
     String? uid,
@@ -33,6 +39,8 @@ class QuoteEntry {
     List<TallyLine>? lines,
     String? client,
     String? location,
+    String? billingAddress,
+    Object? overriddenTotal = _sentinel,
     DateTime? createdAt,
   }) {
     return QuoteEntry(
@@ -43,6 +51,8 @@ class QuoteEntry {
       lines: lines ?? this.lines,
       client: client ?? this.client,
       location: location ?? this.location,
+      billingAddress: billingAddress ?? this.billingAddress,
+      overriddenTotal: identical(overriddenTotal, _sentinel) ? this.overriddenTotal : overriddenTotal as double?,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -55,22 +65,29 @@ class QuoteEntry {
     'lines': lines.map((l) => {'label': l.label, 'amount': l.amount}).toList(),
     'client': client,
     'location': location,
+    'billingAddress': billingAddress,
+    if (overriddenTotal != null) 'overriddenTotal': overriddenTotal,
     'createdAt': createdAt.toIso8601String(),
   };
 
   factory QuoteEntry.fromJson(Map<String, dynamic> json) => QuoteEntry(
-    uid: json['uid'] as String,
-    code: json['code'] as String,
-    name: json['name'] as String,
-    total: (json['total'] as num).toDouble(),
-    lines: (json['lines'] as List).map((l) => TallyLine(
-      label: l['label'] as String,
-      amount: (l['amount'] as num).toDouble(),
-    )).toList(),
-    client: json['client'] as String,
-    location: json['location'] as String? ?? '',
+    uid: (json['uid'] as String?) ?? '',
+    code: (json['code'] as String?) ?? '',
+    name: (json['name'] as String?) ?? '',
+    total: ((json['total'] as num?)?.toDouble()) ?? 0,
+    lines: (json['lines'] as List?)?.map((l) {
+      final m = l as Map<String, dynamic>? ?? <String, dynamic>{};
+      return TallyLine(
+        label: (m['label'] as String?) ?? '',
+        amount: ((m['amount'] as num?)?.toDouble()) ?? 0,
+      );
+    }).toList() ?? [],
+    client: (json['client'] as String?) ?? '',
+    location: (json['location'] as String?) ?? '',
+    billingAddress: (json['billingAddress'] as String?) ?? '',
+    overriddenTotal: (json['overriddenTotal'] as num?)?.toDouble(),
     createdAt: json['createdAt'] != null
-        ? DateTime.parse(json['createdAt'] as String)
+        ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
         : DateTime.now(),
   );
 }

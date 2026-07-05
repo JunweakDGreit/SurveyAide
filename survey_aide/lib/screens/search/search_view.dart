@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
 import '../../core/helpers.dart';
-import '../../providers/region_provider.dart';
+import '../../providers/services_provider.dart';
 import '../../widgets/service_sheet.dart';
 import '../../widgets/toast.dart';
 
@@ -13,10 +13,10 @@ final _filteredServicesProvider = FutureProvider.autoDispose<List<Service>>((ref
   final query = ref.watch(_searchQueryProvider).trim().toLowerCase();
   if (query.isEmpty) return [];
 
-  final region = ref.watch(regionProvider);
-  final regionData = await loadServices(region.displayName);
+  final servicesAsync = ref.watch(servicesProvider);
+  final services = servicesAsync.valueOrNull ?? [];
 
-  return regionData.services.where((s) {
+  return services.where((s) {
     return s.code.toLowerCase().contains(query) ||
         s.name.toLowerCase().contains(query);
   }).toList();
@@ -56,6 +56,7 @@ class _SearchViewState extends ConsumerState<SearchView> {
     final servicesAsync = ref.watch(_filteredServicesProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: TextField(
           controller: _searchCtrl,

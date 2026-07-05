@@ -92,7 +92,7 @@ class _SetupPageState extends ConsumerState<SetupPage> {
     if (_region == null) return;
     await ref.read(setupProvider.notifier).complete(
           _nameController.text.trim(),
-          _region!.name,
+          _region!.code,
         );
     if (context.mounted) context.go('/');
   }

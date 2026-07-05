@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
+import '../../providers/uiprovider.dart';
 import '../../services/traverse_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/press_scale.dart';
 import '../../widgets/sketch_plan_painter.dart';
 import '../../widgets/toast.dart';
 
@@ -90,6 +93,8 @@ class _TraverseScreenState extends State<TraverseScreen> {
   TraverseLeg? _tieLeg;
   double _tieCp1N = 0;
   double _tieCp1E = 0;
+  String? _loadedDataHash;
+  final _horizontalScrollCtrl = ScrollController();
 
   static const _storageKey = 'gep_traverse_data';
 
@@ -110,6 +115,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
     _startNCtrl.dispose();
     _startECtrl.dispose();
     _traverseNameCtrl.dispose();
+    _horizontalScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -363,7 +369,37 @@ class _TraverseScreenState extends State<TraverseScreen> {
     }
   }
 
+  String _inputDataJson() {
+    return json.encode({
+      'name': _traverseNameCtrl.text,
+      'mode': _mode.name,
+      'hasTiePoint': _hasTiePoint,
+      'tieQuadrant': _tieQuadrant?.name,
+      'tieBearingDeg': _tieBearingDeg,
+      'tieBearingMin': _tieBearingMin,
+      'tieBearingSec': _tieBearingSec,
+      'tieDistance': _tieDistance,
+      'startN': _startNCtrl.text,
+      'startE': _startECtrl.text,
+      'points': _points.map((p) => {
+        'id': p.id,
+        'northing': p.northing,
+        'easting': p.easting,
+        'quadrant': p.quadrant?.name,
+        'bearingDeg': p.bearingDeg,
+        'bearingMin': p.bearingMin,
+        'bearingSec': p.bearingSec,
+        'distance': p.distance,
+      }).toList(),
+    });
+  }
+
   void _saveHistory(TraverseComputeResult? result, AdjustmentResult? adjust, AreaResult? area) {
+    final inputJson = _inputDataJson();
+    if (_loadedDataHash != null && _loadedDataHash == inputJson) return;
+
+    _loadedDataHash = inputJson;
+
     final history = StorageService().getString('gep_traverse_history');
     final list = <Map<String, dynamic>>[];
     if (history.isNotEmpty) {
@@ -439,6 +475,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
       _tieLeg = null;
       _tieCp1N = 0;
       _tieCp1E = 0;
+      _loadedDataHash = null;
     });
     _addPoint();
   }
@@ -468,6 +505,239 @@ class _TraverseScreenState extends State<TraverseScreen> {
     };
     await StorageService().setString(_storageKey, json.encode(data));
     if (mounted) showToast(context, 'Traverse saved');
+  }
+
+  void _showLoadDialog() {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final history = _loadHistory();
+    final savedItem = _loadSaved();
+    final theme = Theme.of(context);
+
+    container.read(modalCountProvider.notifier).state++;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.muted.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Row(
+                  children: [
+                    Text('Load Traverse', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  shrinkWrap: true,
+                  children: [
+                    if (savedItem != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text('SAVED', style: theme.textTheme.labelSmall?.copyWith(color: AppTheme.muted, letterSpacing: 1)),
+                      ),
+                      _buildLoadCard(
+                        icon: Icons.folder,
+                        iconColor: AppTheme.steel,
+                        title: savedItem['name'] as String? ?? 'Unnamed',
+                        subtitle: () {
+                          final pts = (savedItem['points'] as List?)?.length ?? 0;
+                          final n = savedItem['startN'] as String? ?? '';
+                          final e = savedItem['startE'] as String? ?? '';
+                          return '$pts points  ·  N: $n  E: $e';
+                        }(),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _loadFromData(savedItem);
+                          WidgetsBinding.instance.addPostFrameCallback((_) => _compute());
+                        },
+                        onDelete: () {
+                          StorageService().setString(_storageKey, '');
+                          Navigator.pop(ctx);
+                          _showLoadDialog();
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (history.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text('HISTORY', style: theme.textTheme.labelSmall?.copyWith(color: AppTheme.muted, letterSpacing: 1)),
+                      ),
+                      ...history.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final item = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildLoadCard(
+                            icon: Icons.route,
+                            iconColor: AppTheme.brass,
+                            title: item['name'] as String? ?? 'Unnamed',
+                            subtitle: () {
+                              final parts = <String>[];
+                              final prec = item['precision'] as String? ?? '';
+                              final area = item['areaSqm'] as num?;
+                              final method = item['method'] as String? ?? '';
+                              final date = item['date'] as String? ?? '';
+                              if (method.isNotEmpty) parts.add(method);
+                              if (prec.isNotEmpty) parts.add(prec);
+                              if (area != null) parts.add('${area.round()} sqm');
+                              if (date.isNotEmpty) parts.add(date.split('T')[0]);
+                              return parts.join('  ·  ');
+                            }(),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _loadFromData(item);
+                              WidgetsBinding.instance.addPostFrameCallback((_) => _compute());
+                            },
+                            onDelete: () {
+                              _deleteHistoryItemAt(idx);
+                              Navigator.pop(ctx);
+                              _showLoadDialog();
+                            },
+                          ),
+                        );
+                      }),
+                    ],
+                    if (savedItem == null && history.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.folder_open, size: 40, color: AppTheme.muted.withValues(alpha: 0.3)),
+                              const SizedBox(height: 8),
+                              Text('No saved or history traverses', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).whenComplete(() {
+      container.read(modalCountProvider.notifier).state--;
+    });
+  }
+
+  Widget _buildLoadCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    VoidCallback? onDelete,
+  }) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 3),
+                    Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11)),
+                  ],
+                ),
+              ),
+              if (onDelete != null)
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: onDelete,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.close, size: 18, color: AppTheme.muted.withValues(alpha: 0.6)),
+                  ),
+                ),
+              if (onDelete == null) const Icon(Icons.chevron_right, color: AppTheme.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _loadHistory() {
+    final jsonStr = StorageService().getString('gep_traverse_history');
+    if (jsonStr.isEmpty) return [];
+    try {
+      final list = json.decode(jsonStr) as List;
+      return list.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Map<String, dynamic>? _loadSaved() {
+    final jsonStr = StorageService().getString(_storageKey);
+    if (jsonStr.isEmpty) return null;
+    try {
+      return json.decode(jsonStr) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _deleteHistoryItemAt(int index) {
+    final jsonStr = StorageService().getString('gep_traverse_history');
+    if (jsonStr.isEmpty) return;
+    try {
+      final list = (json.decode(jsonStr) as List).cast<Map<String, dynamic>>();
+      list.removeAt(index);
+      StorageService().setString('gep_traverse_history', json.encode(list));
+    } catch (_) {}
   }
 
   void _loadFromData(Map<String, dynamic> data) {
@@ -506,6 +776,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
       }
     }
     if (_points.isEmpty) _addPoint();
+    _loadedDataHash = _inputDataJson();
   }
 
   Future<void> _loadFromStorage() async {
@@ -579,6 +850,11 @@ class _TraverseScreenState extends State<TraverseScreen> {
       appBar: AppBar(
         title: const Text('Traverse Computation'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.folder_open_outlined),
+            tooltip: 'Load',
+            onPressed: _showLoadDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.save_outlined),
             tooltip: 'Save',
@@ -661,10 +937,10 @@ class _TraverseScreenState extends State<TraverseScreen> {
 
   Widget _buildStartingCoords(ThemeData theme) {
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -826,10 +1102,10 @@ class _TraverseScreenState extends State<TraverseScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
-        elevation: 0,
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.5)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(10),
@@ -996,12 +1272,15 @@ class _TraverseScreenState extends State<TraverseScreen> {
   Widget _buildAddButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _addPoint,
-        icon: const Icon(Icons.add, size: 18),
-        label: const Text('Add Point'),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: AppTheme.brass.withValues(alpha: 0.5)),
+      child: PressScale(
+        bounce: true,
+        child: OutlinedButton.icon(
+          onPressed: _addPoint,
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Add Point'),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: AppTheme.brass.withValues(alpha: 0.5)),
+          ),
         ),
       ),
     );
@@ -1010,21 +1289,32 @@ class _TraverseScreenState extends State<TraverseScreen> {
   Widget _buildComputeButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: _processing ? null : _compute,
-        icon: _processing
-            ? const SizedBox(
+      child: _processing
+          ? FilledButton.icon(
+              onPressed: null,
+              icon: const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.calculate),
-        label: Text(_processing ? 'Computing...' : 'Compute'),
-        style: FilledButton.styleFrom(
-          backgroundColor: AppTheme.brass,
-          foregroundColor: Colors.white,
-        ),
-      ),
+              ),
+              label: const Text('Computing...'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.brass,
+                foregroundColor: Colors.white,
+              ),
+            )
+              : PressScale(
+              bounce: true,
+              child: FilledButton.icon(
+                onPressed: _compute,
+                icon: const Icon(Icons.calculate),
+                label: const Text('Compute'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.brass,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
     );
   }
 
@@ -1080,8 +1370,10 @@ class _TraverseScreenState extends State<TraverseScreen> {
           ),
           const SizedBox(height: 12),
           Scrollbar(
+            controller: _horizontalScrollCtrl,
             thumbVisibility: true,
             child: SingleChildScrollView(
+              controller: _horizontalScrollCtrl,
               scrollDirection: Axis.horizontal,
               child: _buildResultTable(theme, result, adjust),
             ),
@@ -1176,8 +1468,10 @@ class _TraverseScreenState extends State<TraverseScreen> {
         if (_mode == _InputMode.ne) ...[
           if (_neLegs.isNotEmpty) ...[
             Scrollbar(
+              controller: _horizontalScrollCtrl,
               thumbVisibility: true,
               child: SingleChildScrollView(
+                controller: _horizontalScrollCtrl,
                 scrollDirection: Axis.horizontal,
                 child: _buildNeTable(theme),
               ),
@@ -1398,12 +1692,13 @@ class _TraverseScreenState extends State<TraverseScreen> {
 
 
   Widget _buildAreaCard(ThemeData theme, AreaResult area) {
+    final roundedSqm = area.areaSqM.round();
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       color: AppTheme.brass.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: AppTheme.brass.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1414,14 +1709,18 @@ class _TraverseScreenState extends State<TraverseScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Computed Area',
+                Text('Area',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: AppTheme.muted)),
                 Text(
-                  '${area.areaSqM.toStringAsFixed(2)} sqm  (${area.areaHectares.toStringAsFixed(4)} ha)',
+                  '$roundedSqm sqm',
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 2),
+                Text('Calculated Area: ${area.areaSqM.toStringAsFixed(2)} sqm',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppTheme.muted)),
                 Text('Perimeter: ${area.perimeterM.toStringAsFixed(3)} m',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: AppTheme.muted)),
@@ -1488,8 +1787,8 @@ class _TraverseScreenState extends State<TraverseScreen> {
 
     if (area != null) {
       buffer.writeln('');
-      buffer.writeln('Area: ${area.areaSqM.toStringAsFixed(2)} sqm');
-      buffer.writeln('Area: ${area.areaHectares.toStringAsFixed(4)} ha');
+      buffer.writeln('Area: ${area.areaSqM.round()} sqm');
+      buffer.writeln('Calculated Area: ${area.areaSqM.toStringAsFixed(2)} sqm');
       buffer.writeln('Perimeter: ${area.perimeterM.toStringAsFixed(3)} m');
     }
 
