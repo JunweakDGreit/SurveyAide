@@ -55,10 +55,8 @@ class DashboardView extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _StatCard(
-                icon: Icons.design_services_outlined,
-                label: 'Services Done',
-                value: '${stats.servicesDone}',
+              child: _ServicesCard(
+                stats: stats,
                 color: theme.colorScheme.primary,
                 theme: theme,
               ),
@@ -166,6 +164,115 @@ class DashboardView extends ConsumerWidget {
     }
 
     return insights;
+  }
+}
+
+class _ServicesCard extends StatelessWidget {
+  final DashboardStats stats;
+  final Color color;
+  final ThemeData theme;
+
+  const _ServicesCard({
+    required this.stats,
+    required this.color,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = stats.totalServices;
+    final hasAny = total > 0;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.design_services_outlined, size: 22, color: color),
+            ),
+            const SizedBox(height: 12),
+            Text('Services', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+            const SizedBox(height: 2),
+            Text('$total', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 8,
+                child: Row(
+                  children: [
+                    if (stats.servicesPast > 0)
+                      Flexible(
+                        flex: stats.servicesPast,
+                        child: Container(color: const Color(0xFF4CAF50)),
+                      ),
+                    if (stats.servicesToday > 0)
+                      Flexible(
+                        flex: stats.servicesToday,
+                        child: Container(color: Colors.indigo),
+                      ),
+                    if (stats.servicesUnscheduled > 0)
+                      Flexible(
+                        flex: stats.servicesUnscheduled,
+                        child: Container(color: AppTheme.muted),
+                      ),
+                    if (!hasAny) Expanded(child: Container(color: theme.dividerColor.withValues(alpha: 0.3))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (stats.servicesPast > 0 || stats.servicesToday > 0 || stats.servicesUnscheduled > 0) ...[
+              if (stats.servicesPast > 0) _BreakdownRow(label: 'Done', count: stats.servicesPast, color: const Color(0xFF4CAF50), theme: theme),
+              if (stats.servicesToday > 0) _BreakdownRow(label: 'Ongoing', count: stats.servicesToday, color: Colors.indigo, theme: theme),
+              if (stats.servicesUnscheduled > 0) _BreakdownRow(label: 'Unscheduled', count: stats.servicesUnscheduled, color: AppTheme.muted, theme: theme),
+            ] else
+              Text('No services yet', style: theme.textTheme.labelSmall?.copyWith(color: AppTheme.muted, fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BreakdownRow extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+  final ThemeData theme;
+
+  const _BreakdownRow({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text('$count $label', style: theme.textTheme.labelSmall?.copyWith(color: AppTheme.muted, fontSize: 11)),
+        ],
+      ),
+    );
   }
 }
 

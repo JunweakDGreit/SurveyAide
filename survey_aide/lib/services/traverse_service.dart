@@ -588,3 +588,146 @@ class SurveyUnits {
   static double sqmToHa(double sqm) => sqm / 10000.0;
   static double haToSqm(double ha) => ha * 10000.0;
 }
+
+// ═══════════════════════════════════════════
+// DMD LOT DATA COMPUTATION (GSD-B-11)
+// ═══════════════════════════════════════════
+
+class DmdRow {
+  final String station;
+  final String bearingDms;
+  final double distance;
+  final double latitude;
+  final double departure;
+  final double dmd;
+  final double doubleArea;
+  final double northing;
+  final double easting;
+
+  const DmdRow({
+    required this.station,
+    required this.bearingDms,
+    required this.distance,
+    required this.latitude,
+    required this.departure,
+    required this.dmd,
+    required this.doubleArea,
+    required this.northing,
+    required this.easting,
+  });
+}
+
+class LotDataResult {
+  final List<DmdRow> rows;
+  final double sumLatitude;
+  final double sumDeparture;
+  final double totalDmd;
+  final double doubleAreaTotal;
+  final double areaSqM;
+  final double areaHa;
+  final double perimeter;
+
+  const LotDataResult({
+    required this.rows,
+    required this.sumLatitude,
+    required this.sumDeparture,
+    required this.totalDmd,
+    required this.doubleAreaTotal,
+    required this.areaSqM,
+    required this.areaHa,
+    required this.perimeter,
+  });
+
+  String get areaSqMRounded => areaSqM.toStringAsFixed(2);
+  String get areaHaRounded => areaHa.toStringAsFixed(4);
+}
+
+class LotDataComputer {
+  /// Compute lot data from adjusted coordinates.
+  /// [points] is a list of (northing, easting) tuples in order (closed loop).
+  /// [stations] is optional list of station labels.
+  /// [bearings] is optional list of bearing DMS strings.
+  /// [distances] is optional list of distances.
+  ///
+  /// Uses DMD method for area.
+  static LotDataResult compute(
+    List<(double n, double e)> points, {
+    List<String>? stations,
+    List<String>? bearings,
+    List<double>? distances,
+  }) {
+    final n = points.length;
+    if (n < 3) {
+      return LotDataResult(
+        rows: [], sumLatitude: 0, sumDeparture: 0, totalDmd: 0,
+        doubleAreaTotal: 0, areaSqM: 0, areaHa: 0, perimeter: 0,
+      );
+    }
+
+    // Compute lat, dep for each line (j→(j+1)%n)
+    final lats = <double>[];
+    final deps = <double>[];
+    for (var i = 0; i < n; i++) {
+      final j = (i + 1) % n;
+      lats.add(points[j].$1 - points[i].$1);
+      deps.add(points[j].$2 - points[i].$2);
+    }
+
+    // DMD
+    final dmd = List.filled(n, 0.0);
+    dmd[0] = deps[0];
+    for (var i = 1; i < n; i++) {
+      dmd[i] = dmd[i - 1] + deps[i - 1] + deps[i];
+    }
+
+    // Double area
+    final doubleAreas = List.filled(n, 0.0);
+    for (var i = 0; i < n; i++) {
+      doubleAreas[i] = dmd[i] * lats[i];
+    }
+
+    final doubleAreaTotal = doubleAreas.fold<double>(0, (s, v) => s + v).abs();
+    final areaSqM = doubleAreaTotal / 2.0;
+    final areaHa = areaSqM / 10000.0;
+
+    final perim = AreaCalculator.computePerimeter(points);
+
+    // Build rows
+    final rows = <DmdRow>[];
+    for (var i = 0; i < n; i++) {
+      final azRad = math.atan2(deps[i], lats[i]);
+      final azDeg = (azRad * 180.0 / math.pi + 360.0) % 360.0;
+      final qb = QuadrantBearing.fromAzimuthDegrees(azDeg);
+      final dist = (distances != null && i < distances!.length)
+          ? distances![i]
+          : math.sqrt(lats[i] * lats[i] + deps[i] * deps[i]);
+
+      rows.add(DmdRow(
+        station: (stations != null && i < stations!.length)
+            ? stations![i]
+            : '${i + 1}',
+        bearingDms: (bearings != null && i < bearings!.length)
+            ? bearings![i]
+            : qb.toFormattedString(),
+        distance: dist,
+        latitude: lats[i],
+        departure: deps[i],
+        dmd: dmd[i],
+        doubleArea: doubleAreas[i],
+        northing: points[i].$1,
+        easting: points[i].$2,
+      ));
+    }
+
+    return LotDataResult(
+      rows: rows,
+      sumLatitude: lats.fold(0, (s, v) => s + v),
+      sumDeparture: deps.fold(0, (s, v) => s + v),
+      totalDmd: dmd.last,
+      doubleAreaTotal: doubleAreaTotal,
+      areaSqM: areaSqM,
+      areaHa: areaHa,
+      perimeter: perim,
+    );
+  }
+}

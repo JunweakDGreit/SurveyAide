@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/confirm_dialog.dart';
-import '../../providers/layout_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../core/theme_presets.dart';
 import 'traverse_screen.dart';
@@ -19,17 +18,13 @@ class ToolsPage extends ConsumerStatefulWidget {
 
 class _ToolsPageState extends ConsumerState<ToolsPage> {
   int _tab = 0;
+  final _traverseKey = GlobalKey<TraverseScreenState>();
 
   @override
   void initState() {
     super.initState();
-    _tab = int.tryParse(StorageService().getString('gep_tools_tab', def: '0')) ?? 0;
+    _tab = (int.tryParse(StorageService().getString('gep_tools_tab', def: '0')) ?? 0).clamp(0, 1);
   }
-
-  List<_ToolItem> get _tools => const [
-        _ToolItem('Traverse', Icons.route, 'Traverse computation with Compass/Transit Rule adjustment and area', AppTheme.brass, false),
-        _ToolItem('Coordinate Transform', Icons.swap_horiz, 'WGS84 \u2194 PRS92, UTM \u2194 PTM, datum shift', AppTheme.steel, true),
-      ];
 
   @override
   Widget build(BuildContext context) {
@@ -39,106 +34,51 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Survey Tools'),
-      ),
-      body: Stack(
-        children: [
-          PageTransitionSwitcher(
-            duration: const Duration(milliseconds: 250),
-            transitionBuilder: (child, animation, secondaryAnimation) {
-              return FadeThroughTransition(
-                animation: animation,
-                secondaryAnimation: secondaryAnimation,
-                child: child,
-              );
-            },
-            child: switch (_tab) {
-              1 => _buildHistory(),
-              _ => _buildToolsGrid(),
-            },
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: glassBackdrop(
-                context,
-                radius: 24,
-                background: presetColors.cardColor,
-                child: BottomNavigationBar(
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  currentIndex: _tab,
-                  onTap: (i) => setState(() {
-                    _tab = i;
-                    StorageService().setString('gep_tools_tab', i.toString());
-                  }),
-                  items: const [
-                    BottomNavigationBarItem(icon: Icon(Icons.build_outlined), activeIcon: Icon(Icons.build), label: 'Home'),
-                    BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
-                  ],
+        actions: _tab == 0
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.folder_open_outlined),
+                  tooltip: 'Load',
+                  onPressed: () => _traverseKey.currentState?.triggerLoadDialog(),
                 ),
-              ),
-            ),
+                IconButton(
+                  icon: const Icon(Icons.save_outlined),
+                  tooltip: 'Save',
+                  onPressed: () => _traverseKey.currentState?.triggerSave(),
+                ),
+              ]
+            : null,
+      ),
+      body: _tab == 1
+          ? _buildHistory()
+          : TraverseScreen(key: _traverseKey, embedded: true),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        child: glassBackdrop(
+          context,
+          radius: 24,
+          opacity: 0.92,
+          background: presetColors.cardColor,
+          child: BottomNavigationBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            currentIndex: _tab,
+            onTap: _onNavTap,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'History'),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildToolsGrid() {
-    final tools = _tools;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 64),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 4),
-          Text('Select a tool', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
-          const SizedBox(height: 12),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.04),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey('tools_${ref.watch(gridModeProvider)}'),
-                child: ref.watch(gridModeProvider)
-                    ? GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.85,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
-                        itemCount: tools.length,
-                        itemBuilder: (_, i) => _ToolCard(tool: tools[i]),
-                      )
-                    : ListView.separated(
-                        padding: EdgeInsets.zero,
-                        itemCount: tools.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _ToolListTile(tool: tools[i]),
-                      ),
-              ),
-            ),
-            ),
-        ],
-      ),
-    );
+  void _onNavTap(int i) {
+    setState(() {
+      _tab = i;
+      StorageService().setString('gep_tools_tab', '$i');
+    });
   }
 
   Widget _buildHistory() {
@@ -159,7 +99,7 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       itemCount: history.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) => _buildHistoryCard(history[i], i),
@@ -234,7 +174,7 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
               ),
             ),
           ],
-        ),
+          ),
         ),
       ),
       openBuilder: (_, action) => TraverseScreen(initialData: item),
@@ -270,139 +210,4 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
       return [];
     }
   }
-}
-
-class _ToolListTile extends StatelessWidget {
-  final _ToolItem tool;
-  const _ToolListTile({required this.tool});
-
-  @override
-  Widget build(BuildContext context) {
-    final card = Card(
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: tool.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(tool.icon, color: tool.color, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(tool.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                      if (tool.comingSoon) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.ink.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text('Coming Soon', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.7))),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(tool.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 12)),
-                ],
-              ),
-            ),
-            Icon(tool.comingSoon ? Icons.lock_outline : Icons.chevron_right, color: AppTheme.muted),
-          ],
-        ),
-      ),
-    );
-
-    if (tool.comingSoon) return card;
-
-    return OpenContainer(
-      closedColor: Colors.transparent,
-      closedElevation: 0,
-      openElevation: 0,
-      closedBuilder: (_, action) => card,
-      openBuilder: (_, action) => const TraverseScreen(),
-    );
-  }
-}
-
-class _ToolCard extends StatelessWidget {
-  final _ToolItem tool;
-  const _ToolCard({required this.tool});
-
-  @override
-  Widget build(BuildContext context) {
-    final card = Card(
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: tool.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(tool.icon, color: tool.color, size: 22),
-            ),
-            const Spacer(),
-            Text(tool.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 2),
-            Text(tool.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 6),
-            if (tool.comingSoon)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.ink.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text('Coming Soon', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.7))),
-              ),
-          ],
-        ),
-      ),
-    );
-
-    if (tool.comingSoon) return card;
-
-    return OpenContainer(
-      closedColor: Colors.transparent,
-      closedElevation: 0,
-      openElevation: 0,
-      openShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      closedBuilder: (_, action) => card,
-      openBuilder: (_, action) => const TraverseScreen(),
-    );
-  }
-}
-
-class _ToolItem {
-  final String name;
-  final IconData icon;
-  final String description;
-  final Color color;
-  final bool comingSoon;
-
-  const _ToolItem(this.name, this.icon, this.description, this.color, this.comingSoon);
 }

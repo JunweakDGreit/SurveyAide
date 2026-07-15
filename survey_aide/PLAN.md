@@ -1,47 +1,37 @@
 # PLAN.md — Pending Implementations
 
-## 1. Scroll-aware navbar hiding
-- `uiprovider.dart` — Add `navBarScrollHiddenProvider`
-- `home_screen.dart` — Combined `_updateNavBar()` with dual listeners (modal + scroll)
-- `calculator_view.dart` — `NotificationListener` scroll detection + `AnimatedPadding` (90px visible / 16px hidden)
+## ✅ Completed
 
-## 2. Expense Calculator feature
-- `expense_provider.dart` — NEW — `ExpenseEntry` class + `expenseProvider`
-- `expense_form.dart` — NEW — Dialog with label, type toggle (value/percentage), value input, base dropdown (total/net)
-- `payment_view.dart` — Watch expenses, add Expense section after Payment, add Net Income display, rename "Installment" → "Payment"
-- `installment_form.dart` — Rename title "Installment" → "Payment"
+| # | Item | Status |
+|---|------|--------|
+| 1 | Scroll-aware navbar hiding | Done — `navBarScrollHiddenProvider` in `uiprovider.dart`, `NotificationListener` + `AnimatedPadding` in `calculator_view.dart` |
+| 2 | Expense Calculator | Done — `ExpenseEntry` + `expenseProvider` in `expense_provider.dart`, `expense_form.dart` wired into `payment_view.dart` |
+| 3 | Navbar preset colors + glass | Done — `bottom_nav_bar.dart` watches `themeProvider`, passes `presetColors.cardColor` to `glassBackdrop` |
+| 4 | FAB hidden behind navbar | Done — `schedule_view.dart` wraps FAB in `EdgeInsets.only(bottom: 80)` |
+| 5 | Settings persistence | Done — `reloadFromStorage()` in `setup_provider.dart`, called in `settings_sheet.dart` |
+| 6 | Payment tab enhancements | Done — monetary values alongside percentages, total/net/expense summary in `payment_view.dart` |
+| 7 | Dashboard screen (Page 0) | Done — `DashboardView` with stat cards + insights in `dashboard_view.dart`, `DashboardStats` in `dashboard_provider.dart` |
 
-## 3. Navbar preset colors + glass
-- `bottom_nav_bar.dart` — Watch `themeProvider`, pass `background: presetColors.cardColor` to `glassBackdrop`
-- `tools_page.dart` — Same glass fix
-- `survey_returns_page.dart` — Same glass fix
+## ⏳ Remaining Work
 
-## 4. FAB hidden behind navbar
-- `schedule_view.dart` — Add `Padding(padding: EdgeInsets.only(bottom: 80))` around FAB
+### A. Coordinate Transform — standalone UI entry point
+- Transform is currently only accessible via the traverse dialog (N/E fallback)
+- Add a direct "Transform" button or nav tab in Tools page for quick coordinate entry (no traverse needed)
 
-## 5. Settings persistence (done, needs verification)
-- `setup_provider.dart` — `_load()` → `reloadFromStorage()` (public)
-- `settings_sheet.dart` — `reloadFromStorage()` called in `whenComplete`
+### B. Survey Returns (DENR compliance)
+- `survey_returns_page.dart` has 3-tab shell (Checklist / Reports / History)
+- Most checklist items are `_Status.notStarted` placeholders
+- Need: per-item status tracking, DENR documentary requirements, filing history storage
 
-## 6. Payment tab enhancements
-- `payment_view.dart` — Add actual monetary value display next to percentage in payment entries
-- `payment_view.dart` — Add total payment amount and total expense summary in the card
-- `expense_provider.dart` — Ensure total expense calculation aggregates all entries
-- Update payment card UI to show: total collected, total expense, net (collected - expense)
+### C. Document Generation
+- LDC (Lot Data Computation) sheet export
+- DLSD XML export (one placeholder exists)
+- Technical Description narrative generator (metes and bounds)
+- TRAVERSE / TRD / TRX export
+- Monument Recovery Sheet
 
-## 7. Dashboard screen (Page 0 — landing page)
-- `dashboard_view.dart` — NEW — Glassmorphism dashboard with stat cards:
-  - **Services Done** — total `QuoteEntry` count
-  - **Total Income** — sum of all paid `Installment.amount()` where `paid == true`
-  - **Total Expense** — sum of all `ExpenseEntry.computeAmount()`
-  - **Net Income** — Total Income − Total Expense
-  - **Upcoming Schedules** — count of `Appointment` where `date >= today`
-- `dashboard_provider.dart` — NEW — Computed aggregate provider watching `quoteProvider`, `paymentProvider`, `expenseProvider`, `appointmentProvider`; exposes `DashboardStats` record
-- `home_screen.dart` — Insert `DashboardView` as **Page 0** in the `PageView` (before existing Calculator at Page 1); shift Tools → Page 2, Returns → Page 3
-- `dashboard_view.dart` — **Insights/suggestions widget** below stat cards:
-  - "You have X unpaid receivables" (sum of unpaid installments)
-  - "Most-used service: {code}" (mode of `QuoteEntry.code`)
-  - "X appointments this week" (appointments in next 7 days)
-  - "Top client by revenue: {client}" (client with highest total paid)
-- No time-based charts, no date fields added to models
-- No new DB tables or migrations required
+### D. Point Entry & Map Tools (Phase 2)
+- Manual point entry (lat/lon, northing/easting, bearing-distance)
+- PRS92 PTM zone auto-detection from coordinates
+- GPS live location capture
+- Map canvas point placement (click-to-plot)

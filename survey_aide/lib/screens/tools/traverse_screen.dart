@@ -11,9 +11,11 @@ import '../../widgets/confirm_dialog.dart';
 import '../../widgets/press_scale.dart';
 import '../../widgets/sketch_plan_painter.dart';
 import '../../widgets/toast.dart';
+import '../../widgets/traverse_dialogs.dart';
+import '../../services/crs_service.dart';
 
 
-enum _InputMode { bd, ne }
+enum _InputMode { bd, ne, geographic }
 
 class _PointEntry {
   int id;
@@ -25,6 +27,16 @@ class _PointEntry {
   double bearingSec;
   double? distance;
 
+  // Geographic (lat/lon) fields
+  int latDeg;
+  int latMin;
+  double latSec;
+  bool latNorth;
+  int lonDeg;
+  int lonMin;
+  double lonSec;
+  bool lonEast;
+
   _PointEntry({
     required this.id,
     this.northing,
@@ -34,6 +46,14 @@ class _PointEntry {
     this.bearingMin = 0,
     this.bearingSec = 0.0,
     this.distance,
+    this.latDeg = 0,
+    this.latMin = 0,
+    this.latSec = 0.0,
+    this.latNorth = true,
+    this.lonDeg = 0,
+    this.lonMin = 0,
+    this.lonSec = 0.0,
+    this.lonEast = true,
   });
 }
 
@@ -59,14 +79,15 @@ class _NeLeg {
 
 class TraverseScreen extends StatefulWidget {
   final Map<String, dynamic>? initialData;
+  final bool embedded;
 
-  const TraverseScreen({super.key, this.initialData});
+  const TraverseScreen({super.key, this.initialData, this.embedded = false});
 
   @override
-  State<TraverseScreen> createState() => _TraverseScreenState();
+  State<TraverseScreen> createState() => TraverseScreenState();
 }
 
-class _TraverseScreenState extends State<TraverseScreen> {
+class TraverseScreenState extends State<TraverseScreen> {
   final _points = <_PointEntry>[];
   final _startNCtrl = TextEditingController();
   final _startECtrl = TextEditingController();
@@ -83,6 +104,8 @@ class _TraverseScreenState extends State<TraverseScreen> {
   int _tieBearingMin = 0;
   double _tieBearingSec = 0.0;
   double? _tieDistance;
+  String? _crsFrom;
+  String? _crsTo;
   bool _showResults = false;
   bool _processing = false;
   bool _showDetailedTable = false;
@@ -140,7 +163,9 @@ class _TraverseScreenState extends State<TraverseScreen> {
   }
 
   String _badgeLabel(int index) {
-    if (_mode == _InputMode.ne) return '${index + 1}';
+    if (_mode == _InputMode.ne || _mode == _InputMode.geographic) {
+      return '${index + 1}';
+    }
     final from = index + 1;
     final to = index == _points.length - 1 ? 1 : from + 1;
     return '$from→$to';
@@ -309,7 +334,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
       });
       _saveHistory(result, adjust, area);
 
-    } else {
+    } else if (_mode == _InputMode.ne) {
       // N/E mode – area only
       final coords = <(double, double)>[];
       for (final point in _points) {
@@ -318,55 +343,96 @@ class _TraverseScreenState extends State<TraverseScreen> {
         }
       }
 
-      // Compute inverse legs (consecutive pairs)
-      final neLegs = <_NeLeg>[];
-      for (var i = 0; i < coords.length - 1; i++) {
-        final (n1, e1) = coords[i];
-        final (n2, e2) = coords[i + 1];
-        final dN = n2 - n1;
-        final dE = e2 - e1;
-        final dist = math.sqrt(dN * dN + dE * dE);
-        final azRad = math.atan2(dE, dN);
-        final azDeg = (azRad * 180 / math.pi + 360) % 360;
-        neLegs.add(_NeLeg(
-          label: '${i + 1}→${i + 2}',
-          bearingDeg: azDeg,
-          distance: dist,
-          dN: dN, dE: dE,
-          northing: n2, easting: e2,
-        ));
-      }
-      // Closing leg back to station 1
-      if (coords.length >= 3) {
-        final (n1, e1) = coords.last;
-        final (n2, e2) = coords.first;
-        final dN = n2 - n1;
-        final dE = e2 - e1;
-        final dist = math.sqrt(dN * dN + dE * dE);
-        final azRad = math.atan2(dE, dN);
-        final azDeg = (azRad * 180 / math.pi + 360) % 360;
-        neLegs.add(_NeLeg(
-          label: '${coords.length}→1',
-          bearingDeg: azDeg,
-          distance: dist,
-          dN: dN, dE: dE,
-          northing: n2, easting: e2,
-        ));
+      _computeNeMode(coords);
+
+    } else {
+      // Geographic mode – convert lat/lon to target CRS, then area
+      final coords = <(double, double)>[];
+      for (final point in _points) {
+        final geo = _convertToDecimal(point);
+        if (geo != null) {
+          final (lat, lon) = geo;
+          try {
+            final result = CrsService.instance.transform(
+              lon, lat, 'WGS84', _crsFrom ?? 'WGS84',
+            );
+            coords.add((result.$2, result.$1));
+          } catch (_) {}
+        }
       }
 
-      AreaResult? area;
-      if (coords.length >= 3) area = AreaCalculator.compute(coords);
+      _computeNeMode(coords);
+    }
+  }
 
+  (double, double)? _convertToDecimal(_PointEntry p) {
+    if (p.latDeg == 0 && p.lonDeg == 0) return null;
+    final lat = (p.latDeg + p.latMin / 60.0 + p.latSec / 3600.0) *
+        (p.latNorth ? 1.0 : -1.0);
+    final lon = (p.lonDeg + p.lonMin / 60.0 + p.lonSec / 3600.0) *
+        (p.lonEast ? 1.0 : -1.0);
+    return (lat, lon);
+  }
+
+  void _computeNeMode(List<(double, double)> coords) {
+    if (coords.length < 3) {
       setState(() {
         _computeResult = null;
         _adjustResult = null;
-        _areaResult = area;
-        _neLegs = neLegs;
+        _areaResult = null;
+        _neLegs = [];
         _showResults = true;
         _processing = false;
       });
-      _saveHistory(null, null, area);
+      return;
     }
+
+    final neLegs = <_NeLeg>[];
+    for (var i = 0; i < coords.length - 1; i++) {
+      final (n1, e1) = coords[i];
+      final (n2, e2) = coords[i + 1];
+      final dN = n2 - n1;
+      final dE = e2 - e1;
+      final dist = math.sqrt(dN * dN + dE * dE);
+      final azRad = math.atan2(dE, dN);
+      final azDeg = (azRad * 180 / math.pi + 360) % 360;
+      neLegs.add(_NeLeg(
+        label: '${i + 1}→${i + 2}',
+        bearingDeg: azDeg,
+        distance: dist,
+        dN: dN, dE: dE,
+        northing: n2, easting: e2,
+      ));
+    }
+    if (coords.length >= 3) {
+      final (n1, e1) = coords.last;
+      final (n2, e2) = coords.first;
+      final dN = n2 - n1;
+      final dE = e2 - e1;
+      final dist = math.sqrt(dN * dN + dE * dE);
+      final azRad = math.atan2(dE, dN);
+      final azDeg = (azRad * 180 / math.pi + 360) % 360;
+      neLegs.add(_NeLeg(
+        label: '${coords.length}→1',
+        bearingDeg: azDeg,
+        distance: dist,
+        dN: dN, dE: dE,
+        northing: n2, easting: e2,
+      ));
+    }
+
+    AreaResult? area;
+    if (coords.length >= 3) area = AreaCalculator.compute(coords);
+
+    setState(() {
+      _computeResult = null;
+      _adjustResult = null;
+      _areaResult = area;
+      _neLegs = neLegs;
+      _showResults = true;
+      _processing = false;
+    });
+    _saveHistory(null, null, area);
   }
 
   String _inputDataJson() {
@@ -390,6 +456,14 @@ class _TraverseScreenState extends State<TraverseScreen> {
         'bearingMin': p.bearingMin,
         'bearingSec': p.bearingSec,
         'distance': p.distance,
+        'latDeg': p.latDeg,
+        'latMin': p.latMin,
+        'latSec': p.latSec,
+        'latNorth': p.latNorth,
+        'lonDeg': p.lonDeg,
+        'lonMin': p.lonMin,
+        'lonSec': p.lonSec,
+        'lonEast': p.lonEast,
       }).toList(),
     });
   }
@@ -437,6 +511,14 @@ class _TraverseScreenState extends State<TraverseScreen> {
         'bearingMin': p.bearingMin,
         'bearingSec': p.bearingSec,
         'distance': p.distance,
+        'latDeg': p.latDeg,
+        'latMin': p.latMin,
+        'latSec': p.latSec,
+        'latNorth': p.latNorth,
+        'lonDeg': p.lonDeg,
+        'lonMin': p.lonMin,
+        'lonSec': p.lonSec,
+        'lonEast': p.lonEast,
       }).toList(),
     });
 
@@ -452,6 +534,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
       confirmLabel: 'Clear',
     );
     if (!confirmed) return;
+    StorageService().setString(_storageKey, '');
     setState(() {
       _points.clear();
       _computeResult = null;
@@ -459,6 +542,8 @@ class _TraverseScreenState extends State<TraverseScreen> {
       _areaResult = null;
       _showResults = false;
       _mode = _InputMode.bd;
+      _crsFrom = null;
+      _crsTo = null;
       _hasTiePoint = false;
       _tieQuadrant = null;
       _tieBearingDeg = 0;
@@ -770,6 +855,14 @@ class _TraverseScreenState extends State<TraverseScreen> {
         bearingMin: pm['bearingMin'] as int? ?? 0,
         bearingSec: (pm['bearingSec'] as num?)?.toDouble() ?? 0.0,
         distance: (pm['distance'] as num?)?.toDouble(),
+        latDeg: pm['latDeg'] as int? ?? 0,
+        latMin: pm['latMin'] as int? ?? 0,
+        latSec: (pm['latSec'] as num?)?.toDouble() ?? 0.0,
+        latNorth: pm['latNorth'] as bool? ?? true,
+        lonDeg: pm['lonDeg'] as int? ?? 0,
+        lonMin: pm['lonMin'] as int? ?? 0,
+        lonSec: (pm['lonSec'] as num?)?.toDouble() ?? 0.0,
+        lonEast: pm['lonEast'] as bool? ?? true,
       ));
       if (pm['id'] as int >= _nextId) {
         _nextId = (pm['id'] as int) + 1;
@@ -788,6 +881,29 @@ class _TraverseScreenState extends State<TraverseScreen> {
     } catch (_) {
       if (_points.isEmpty) _addPoint();
     }
+  }
+
+  List<(double, double)> _getGridCoords() {
+    if (_mode == _InputMode.geographic) {
+      final coords = <(double, double)>[];
+      for (final pt in _points) {
+        final geo = _convertToDecimal(pt);
+        if (geo != null) {
+          final (lat, lon) = geo;
+          try {
+            final result = CrsService.instance.transform(
+              lon, lat, 'WGS84', _crsFrom ?? 'WGS84',
+            );
+            coords.add((result.$2, result.$1));
+          } catch (_) {}
+        }
+      }
+      return coords;
+    }
+    return _points
+        .where((p) => p.northing != null && p.easting != null)
+        .map((p) => (p.northing!, p.easting!))
+        .toList();
   }
 
   List<(double, double)> _getSketchCoords() {
@@ -818,6 +934,24 @@ class _TraverseScreenState extends State<TraverseScreen> {
     return [];
   }
 
+  List<(double, double)> _getPerimeterCoords() {
+    final all = _getSketchCoords();
+    // When tie point is active, the last entry is the closure back to CP1
+    // (duplicating the first corner). Remove it so each corner appears once.
+    if (_effectiveTiePoint && all.length > 1) {
+      return all.sublist(0, all.length - 1);
+    }
+    return all;
+  }
+
+  List<String> _getPerimeterLabels() {
+    final all = _getSketchLabels();
+    if (_effectiveTiePoint && all.length > 1) {
+      return all.sublist(0, all.length - 1);
+    }
+    return all;
+  }
+
   List<String> _getSketchLabels() {
     if (_adjustResult != null) {
       return _adjustResult!.adjustedLegs.map((l) => l.leg.station).toList();
@@ -846,6 +980,39 @@ class _TraverseScreenState extends State<TraverseScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final body = GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(theme),
+            const SizedBox(height: 8),
+            _buildModeSelector(theme),
+            const SizedBox(height: 8),
+            _buildCrsSelector(theme),
+            const SizedBox(height: 16),
+            if (_mode != _InputMode.geographic) _buildStartingCoords(theme),
+            const SizedBox(height: 16),
+            _buildPointEntries(theme),
+            const SizedBox(height: 12),
+            _buildAddButton(theme),
+            const SizedBox(height: 16),
+            _buildComputeButton(theme),
+            if (widget.embedded) ...[
+              const SizedBox(height: 12),
+              _buildClearButton(theme),
+            ],
+            if (!widget.embedded) const SizedBox(height: 40),
+            if (widget.embedded) const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.embedded) return body;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Traverse Computation'),
@@ -867,33 +1034,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
           ),
         ],
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(theme),
-              const SizedBox(height: 8),
-              _buildModeSelector(theme),
-              const SizedBox(height: 16),
-              _buildStartingCoords(theme),
-              const SizedBox(height: 16),
-              _buildPointEntries(theme),
-              const SizedBox(height: 12),
-              _buildAddButton(theme),
-              const SizedBox(height: 20),
-              _buildComputeButton(theme),
-              if (_showResults && (_computeResult != null || _areaResult != null)) ...[
-                const SizedBox(height: 20),
-                _buildResults(theme),
-              ],
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
-      ),
+      body: body,
     );
   }
 
@@ -901,7 +1042,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
     return TextField(
       controller: _traverseNameCtrl,
       decoration: glassInputDecoration(context,
-          labelText: 'Traverse Name', hintText: 'e.g. Lot 234 Traverse'),
+          labelText: 'Project Name', hintText: 'e.g. Lot 234 Traverse'),
       textCapitalization: TextCapitalization.sentences,
     );
   }
@@ -918,8 +1059,12 @@ class _TraverseScreenState extends State<TraverseScreen> {
                 icon: Icon(Icons.straighten, size: 14)),
             ButtonSegment(
                 value: _InputMode.ne,
-                label: Text('N/E', style: TextStyle(fontSize: 11)),
+                label: Text('Grid', style: TextStyle(fontSize: 11)),
                 icon: Icon(Icons.pin, size: 14)),
+            ButtonSegment(
+                value: _InputMode.geographic,
+                label: Text('Geo', style: TextStyle(fontSize: 11)),
+                icon: Icon(Icons.public, size: 14)),
           ],
           selected: {_mode},
           onSelectionChanged: (v) =>
@@ -929,6 +1074,54 @@ class _TraverseScreenState extends State<TraverseScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             textStyle: WidgetStatePropertyAll(
                 theme.textTheme.labelSmall),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCrsSelector(ThemeData theme) {
+    final allItems = [
+      DropdownMenuItem<String?>(
+        value: null,
+        child: const Text('Local', style: TextStyle(fontSize: 11)),
+      ),
+      ...CrsService.availableCrs.map((crs) => DropdownMenuItem<String?>(
+        value: crs.code,
+        child: Text(crs.label, style: const TextStyle(fontSize: 11)),
+      )),
+    ];
+    return Row(
+      children: [
+        Expanded(
+          child: InputDecorator(
+            decoration: glassInputDecoration(context,
+                labelText: 'CRS From', isDense: true),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String?>(
+                value: _crsFrom,
+                isDense: true,
+                isExpanded: true,
+                items: allItems,
+                onChanged: (v) => setState(() => _crsFrom = v),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: InputDecorator(
+            decoration: glassInputDecoration(context,
+                labelText: 'CRS To', isDense: true),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String?>(
+                value: _crsTo,
+                isDense: true,
+                isExpanded: true,
+                items: allItems,
+                onChanged: (v) => setState(() => _crsTo = v),
+              ),
+            ),
           ),
         ),
       ],
@@ -995,7 +1188,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
                 Row(
                   children: [
                     SizedBox(
-                      width: 70,
+                      width: 120,
                       child: DropdownButtonFormField<Quadrant>(
                         key: ValueKey('tieQuad_${_tieQuadrant ?? 'none'}'),
                         initialValue: _tieQuadrant,
@@ -1139,7 +1332,9 @@ class _TraverseScreenState extends State<TraverseScreen> {
               const SizedBox(height: 8),
               _mode == _InputMode.ne
                   ? _buildCoordFields(point, theme)
-                  : _buildBDFields(point, theme),
+                  : _mode == _InputMode.geographic
+                      ? _buildGeoFields(point, theme)
+                      : _buildBDFields(point, theme),
             ],
           ),
         ),
@@ -1179,13 +1374,140 @@ class _TraverseScreenState extends State<TraverseScreen> {
     );
   }
 
+  Widget _buildGeoFields(_PointEntry point, ThemeData theme) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 48,
+              child: InputDecorator(
+                decoration: glassInputDecoration(context,
+                    labelText: 'N/S', isDense: true),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<bool>(
+                    value: point.latNorth,
+                    isDense: true,
+                    isExpanded: true,
+                    items: const [
+                      DropdownMenuItem(value: true, child: Text('N', style: TextStyle(fontSize: 11))),
+                      DropdownMenuItem(value: false, child: Text('S', style: TextStyle(fontSize: 11))),
+                    ],
+                    onChanged: (v) => setState(() => point.latNorth = v ?? true),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                decoration: glassInputDecoration(context,
+                    labelText: 'Lat °', isDense: true),
+                keyboardType: TextInputType.number,
+                style: theme.textTheme.bodySmall,
+                controller: TextEditingController(
+                    text: point.latDeg > 0 ? point.latDeg.toString() : ''),
+                onChanged: (v) => point.latDeg = int.tryParse(v) ?? 0,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                decoration: glassInputDecoration(context,
+                    labelText: "'", isDense: true),
+                keyboardType: TextInputType.number,
+                style: theme.textTheme.bodySmall,
+                controller: TextEditingController(
+                    text: point.latMin > 0 ? point.latMin.toString() : ''),
+                onChanged: (v) => point.latMin = int.tryParse(v) ?? 0,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                decoration: glassInputDecoration(context,
+                    labelText: '"', isDense: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: theme.textTheme.bodySmall,
+                controller: TextEditingController(
+                    text: point.latSec > 0 ? point.latSec.toString() : ''),
+                onChanged: (v) => point.latSec = double.tryParse(v) ?? 0.0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            SizedBox(
+              width: 48,
+              child: InputDecorator(
+                decoration: glassInputDecoration(context,
+                    labelText: 'E/W', isDense: true),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<bool>(
+                    value: point.lonEast,
+                    isDense: true,
+                    isExpanded: true,
+                    items: const [
+                      DropdownMenuItem(value: true, child: Text('E', style: TextStyle(fontSize: 11))),
+                      DropdownMenuItem(value: false, child: Text('W', style: TextStyle(fontSize: 11))),
+                    ],
+                    onChanged: (v) => setState(() => point.lonEast = v ?? true),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                decoration: glassInputDecoration(context,
+                    labelText: 'Lon °', isDense: true),
+                keyboardType: TextInputType.number,
+                style: theme.textTheme.bodySmall,
+                controller: TextEditingController(
+                    text: point.lonDeg > 0 ? point.lonDeg.toString() : ''),
+                onChanged: (v) => point.lonDeg = int.tryParse(v) ?? 0,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                decoration: glassInputDecoration(context,
+                    labelText: "'", isDense: true),
+                keyboardType: TextInputType.number,
+                style: theme.textTheme.bodySmall,
+                controller: TextEditingController(
+                    text: point.lonMin > 0 ? point.lonMin.toString() : ''),
+                onChanged: (v) => point.lonMin = int.tryParse(v) ?? 0,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                decoration: glassInputDecoration(context,
+                    labelText: '"', isDense: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: theme.textTheme.bodySmall,
+                controller: TextEditingController(
+                    text: point.lonSec > 0 ? point.lonSec.toString() : ''),
+                onChanged: (v) => point.lonSec = double.tryParse(v) ?? 0.0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+      ],
+    );
+  }
+
   Widget _buildBDFields(_PointEntry point, ThemeData theme) {
     return Column(
       children: [
         Row(
           children: [
             SizedBox(
-              width: 70,
+              width: 120,
               child: DropdownButtonFormField<Quadrant>(
                 initialValue: point.quadrant,
                 isDense: true,
@@ -1286,35 +1608,40 @@ class _TraverseScreenState extends State<TraverseScreen> {
     );
   }
 
+  Widget _buildClearButton(ThemeData theme) {
+    return SizedBox(
+      width: double.infinity,
+      child: PressScale(
+        bounce: true,
+        child: OutlinedButton.icon(
+          onPressed: _clearAll,
+          icon: const Icon(Icons.delete_outline, size: 18),
+          label: const Text('Clear'),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: AppTheme.muted.withValues(alpha: 0.3)),
+            foregroundColor: AppTheme.muted,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildComputeButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
-      child: _processing
-          ? FilledButton.icon(
-              onPressed: null,
-              icon: const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              label: const Text('Computing...'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.brass,
-                foregroundColor: Colors.white,
-              ),
-            )
-              : PressScale(
-              bounce: true,
-              child: FilledButton.icon(
-                onPressed: _compute,
-                icon: const Icon(Icons.calculate),
-                label: const Text('Compute'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brass,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
+      child: ElevatedButton.icon(
+        onPressed: _processing ? null : _showComputeDialog,
+        icon: const Icon(Icons.calculate, size: 20),
+        label: const Text('COMPUTE',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.brass,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
     );
   }
 
@@ -1465,7 +1792,7 @@ class _TraverseScreenState extends State<TraverseScreen> {
             ],
           ),
         ],
-        if (_mode == _InputMode.ne) ...[
+        if (_mode == _InputMode.ne || _mode == _InputMode.geographic) ...[
           if (_neLegs.isNotEmpty) ...[
             Scrollbar(
               controller: _horizontalScrollCtrl,
@@ -1795,4 +2122,58 @@ class _TraverseScreenState extends State<TraverseScreen> {
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     showToast(context, 'Results copied to clipboard');
   }
+
+  Future<bool> _computeIfNeeded() async {
+    if (_computeResult != null || _areaResult != null) return true;
+    await _compute();
+    return _computeResult != null || _areaResult != null;
+  }
+
+  Future<void> _showComputeDialog() async {
+    List<(double, double)> coords;
+    List<String> labels;
+
+    final fromGrid = _mode == _InputMode.ne || _mode == _InputMode.geographic;
+    if (fromGrid) {
+      coords = _getGridCoords();
+      labels = [];
+      for (var i = 0; i < coords.length; i++) labels.add('${i + 1}');
+    } else {
+      final ok = await _computeIfNeeded();
+      if (!ok) {
+        if (context.mounted) showToast(context, 'Add at least one valid leg');
+        return;
+      }
+      coords = _getPerimeterCoords();
+      labels = _getPerimeterLabels();
+    }
+
+    if (coords.isEmpty) {
+      if (context.mounted) showToast(context, 'Enter at least one coordinate');
+      return;
+    }
+
+    final points = <(double n, double e, String label)>[];
+    for (var i = 0; i < coords.length; i++) {
+      points.add((coords[i].$1, coords[i].$2, i < labels.length ? labels[i] : '${i + 1}'));
+    }
+
+    final title = _traverseNameCtrl.text.isNotEmpty
+        ? _traverseNameCtrl.text
+        : 'Traverse';
+
+    if (!context.mounted) return;
+    showComputeDialog(
+      context,
+      points: points,
+      crsFrom: _crsFrom,
+      crsTo: _crsTo,
+      title: title,
+    );
+  }
+
+  Future<void> triggerComputeDialog() => _showComputeDialog();
+  void triggerLoadDialog() => _showLoadDialog();
+  Future<void> triggerSave() => _saveToStorage();
+  void triggerClear() => _clearAll();
 }

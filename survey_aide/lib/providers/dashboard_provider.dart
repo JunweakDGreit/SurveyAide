@@ -6,7 +6,11 @@ import 'expense_provider.dart';
 import 'appointment_provider.dart';
 
 class DashboardStats {
-  final int servicesDone;
+  final int servicesPast;
+  final int servicesToday;
+  final int servicesFuture;
+  final int servicesUnscheduled;
+  final int totalServices;
   final double totalIncome;
   final double totalExpense;
   final double netIncome;
@@ -17,7 +21,11 @@ class DashboardStats {
   final String topClient;
 
   const DashboardStats({
-    required this.servicesDone,
+    required this.servicesPast,
+    required this.servicesToday,
+    required this.servicesFuture,
+    required this.servicesUnscheduled,
+    required this.totalServices,
     required this.totalIncome,
     required this.totalExpense,
     required this.netIncome,
@@ -38,7 +46,31 @@ final dashboardProvider = Provider<DashboardStats>((ref) {
   final today = DateTime(now.year, now.month, now.day);
   final weekEnd = today.add(const Duration(days: 7));
 
-  final servicesDone = items.length;
+  int servicesPast = 0;
+  int servicesToday = 0;
+  int servicesFuture = 0;
+  int servicesUnscheduled = 0;
+
+  for (final item in items) {
+    final itemAppts = appointments.where((a) => a.itemUid == item.uid).toList();
+    if (itemAppts.isEmpty) {
+      servicesUnscheduled++;
+      continue;
+    }
+    itemAppts.sort((a, b) => a.date.compareTo(b.date));
+    final apptDay = DateTime(
+      itemAppts.first.date.year,
+      itemAppts.first.date.month,
+      itemAppts.first.date.day,
+    );
+    if (apptDay.isBefore(today)) {
+      servicesPast++;
+    } else if (apptDay == today) {
+      servicesToday++;
+    } else {
+      servicesFuture++;
+    }
+  }
 
   double totalIncome = 0;
   for (final item in items) {
@@ -95,8 +127,14 @@ final dashboardProvider = Provider<DashboardStats>((ref) {
     topClient = sorted.first.key;
   }
 
+  final totalServices = servicesPast + servicesToday + servicesFuture + servicesUnscheduled;
+
   return DashboardStats(
-    servicesDone: servicesDone,
+    servicesPast: servicesPast,
+    servicesToday: servicesToday,
+    servicesFuture: servicesFuture,
+    servicesUnscheduled: servicesUnscheduled,
+    totalServices: totalServices,
     totalIncome: totalIncome,
     totalExpense: totalExpense,
     netIncome: netIncome,

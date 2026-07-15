@@ -6,6 +6,7 @@ import '../../core/helpers.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/region_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/uiprovider.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/service_sheet.dart';
 import '../../widgets/toast.dart';
@@ -49,6 +50,7 @@ class CalculatorView extends ConsumerStatefulWidget {
 class _CalculatorViewState extends ConsumerState<CalculatorView> {
   int _activeTab = 0;
   bool _gridMode = false;
+  double _lastScrollOffset = 0;
 
   @override
   void initState() {
@@ -212,27 +214,45 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
         ),
         // Service list
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.04),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollUpdateNotification) {
+                final delta = notification.metrics.pixels - _lastScrollOffset;
+                if (delta.abs() > 8) {
+                  ref.read(navBarScrollHiddenProvider.notifier).state = delta > 0;
+                }
+                _lastScrollOffset = notification.metrics.pixels;
+              }
+              return false;
             },
-            child: KeyedSubtree(
-              key: ValueKey('${filteredCats[_activeTab]}_$_gridMode'),
-              child: _gridMode
-                  ? _buildServiceGrid(filteredCats, allServices, pinned, showFav)
-                  : _buildServiceList(filteredCats, allServices, pinned, showFav),
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.only(
+                bottom: ref.watch(navBarScrollHiddenProvider) ? 16.0 : 90.0,
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey('${filteredCats[_activeTab]}_$_gridMode'),
+                  child: _gridMode
+                      ? _buildServiceGrid(filteredCats, allServices, pinned, showFav)
+                      : _buildServiceList(filteredCats, allServices, pinned, showFav),
+                ),
+              ),
             ),
           ),
         ),
@@ -296,7 +316,7 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       itemCount: services.length,
       itemBuilder: (_, i) {
         final service = services[i];
@@ -412,7 +432,7 @@ class _CalculatorViewState extends ConsumerState<CalculatorView> {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 1.05,

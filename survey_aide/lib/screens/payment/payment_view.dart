@@ -7,11 +7,11 @@ import '../../providers/quote_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/expense_provider.dart';
-import '../../services/export_service.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/calculator_dialog.dart';
 import 'installment_form.dart';
 import 'expense_form.dart';
+import 'invoice_preview_screen.dart';
 
 class PaymentView extends ConsumerWidget {
   const PaymentView({super.key});
@@ -260,85 +260,11 @@ class PaymentView extends ConsumerWidget {
     }
   }
 
-  Future<void> _showInvoiceShare(BuildContext context, QuoteEntry item) async {
-    final total = item.lines.fold<double>(0, (sum, line) => sum + line.amount);
-    final bytes = await generateQuoteImage([item]);
-
-    if (!context.mounted) return;
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        return Dialog(
-          backgroundColor: theme.cardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: Text('Invoice Preview', style: theme.textTheme.titleLarge)),
-                      IconButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(serviceLabel(item.code, item.name), style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 4),
-                  Text('Total: ${peso(total)}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(ctx).size.width * 0.82,
-                          maxHeight: MediaQuery.of(ctx).size.height * 0.6,
-                        ),
-                        child: Image.memory(bytes, fit: BoxFit.contain),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () async {
-                      Navigator.of(ctx).pop();
-                      await sharePdf([item], fileName: 'invoice_${item.uid}.pdf');
-                    },
-                    icon: const Icon(Icons.share),
-                    label: const Text('Share Invoice'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () async {
-                      Navigator.of(ctx).pop();
-                      await shareImage(bytes);
-                    },
-                    icon: const Icon(Icons.image),
-                    label: const Text('Share as Image'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () async {
-                      Navigator.of(ctx).pop();
-                      final text = formatQuoteText([item]);
-                      await shareText(text);
-                    },
-                    icon: const Icon(Icons.text_snippet),
-                    label: const Text('Share as Text'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+  void _showInvoiceShare(BuildContext context, QuoteEntry item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => InvoicePreviewScreen(item: item),
+      ),
     );
   }
 }

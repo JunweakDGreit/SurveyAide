@@ -223,18 +223,19 @@ Future<Uint8List> generateQuoteImage(List<QuoteEntry> items, {BusinessInfo? busi
   final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, _invoiceW, totalHeight));
 
   const bg = Color(0xFFFFFFFF);
-  const black = Color(0xFF000000);
   const darkGray = Color(0xFF333333);
   const muted = Color(0xFF888888);
   const rule = Color(0xFFE0E0E0);
   const lightBg = Color(0xFFF5F5F5);
+  const accentColor = Color(0xFFE8A06B);
 
   canvas.drawRect(Rect.fromLTWH(0, 0, _invoiceW, totalHeight), Paint()..color = bg);
 
   // Header
-  canvas.drawRect(const Rect.fromLTWH(0, 0, _invoiceW, headerH), Paint()..color = black);
-  drawText(canvas, 'INVOICE', _invoiceMargin, 22, size: 26, color: const Color(0xFFFFFFFF), weight: FontWeight.bold);
-  drawText(canvas, 'SURVEY AIDE', _invoiceMargin, 50, size: 10, color: const Color(0x99FFFFFF));
+  drawText(canvas, 'INVOICE', _invoiceMargin, 22, size: 26, color: darkGray, weight: FontWeight.bold);
+  drawText(canvas, 'SURVEY AIDE', _invoiceMargin, 50, size: 10, color: muted);
+  // Accent divider
+  canvas.drawRect(Rect.fromLTWH(_invoiceMargin, headerH - 2, _invoiceW - 2 * _invoiceMargin, 2), Paint()..color = accentColor);
 
   double y = headerH + 12;
 
@@ -289,7 +290,7 @@ Future<Uint8List> generateQuoteImage(List<QuoteEntry> items, {BusinessInfo? busi
       continue;
     }
     if (key.startsWith('bill_name_')) {
-      drawText(canvas, val, _invoiceMargin, bodyY, size: 14, color: black, weight: FontWeight.bold);
+      drawText(canvas, val, _invoiceMargin, bodyY, size: 14, color: darkGray, weight: FontWeight.bold);
       bodyY += _invoiceLineH;
       continue;
     }
@@ -301,7 +302,7 @@ Future<Uint8List> generateQuoteImage(List<QuoteEntry> items, {BusinessInfo? busi
     }
 
     if (key.startsWith('svc_')) {
-      drawText(canvas, val, _invoiceMargin, bodyY, size: 12, color: black, weight: FontWeight.bold);
+      drawText(canvas, val, _invoiceMargin, bodyY, size: 12, color: darkGray, weight: FontWeight.bold);
       bodyY += _invoiceLineH;
       continue;
     }
@@ -311,14 +312,14 @@ Future<Uint8List> generateQuoteImage(List<QuoteEntry> items, {BusinessInfo? busi
       continue;
     }
     if (key.startsWith('amt_')) {
-      drawTextRight(canvas, val, infoX, bodyY - _invoiceLineH, size: 11, color: black, weight: FontWeight.w600);
+      drawTextRight(canvas, val, infoX, bodyY - _invoiceLineH, size: 11, color: darkGray, weight: FontWeight.w600);
       continue;
     }
 
     if (key.startsWith('client_tot_')) {
       canvas.drawRect(Rect.fromLTWH(_invoiceMargin, bodyY - 2, _invoiceW - 2 * _invoiceMargin, _invoiceLineH + 4), Paint()..color = lightBg);
-      drawText(canvas, 'Subtotal', _invoiceMargin, bodyY, size: 11, color: black, weight: FontWeight.bold);
-      drawTextRight(canvas, val, infoX, bodyY, size: 11, color: black, weight: FontWeight.bold);
+      drawText(canvas, 'Subtotal', _invoiceMargin, bodyY, size: 11, color: darkGray, weight: FontWeight.bold);
+      drawTextRight(canvas, val, infoX, bodyY, size: 11, color: darkGray, weight: FontWeight.bold);
       bodyY += _invoiceLineH + 4;
       canvas.drawLine(Offset(_invoiceMargin, bodyY), Offset(_invoiceW - _invoiceMargin, bodyY), Paint()..color = rule..strokeWidth = 0.5);
       bodyY += 8;
@@ -335,17 +336,21 @@ Future<Uint8List> generateQuoteImage(List<QuoteEntry> items, {BusinessInfo? busi
       continue;
     }
     if (key == 'grand') {
-      canvas.drawRect(Rect.fromLTWH(_invoiceMargin, bodyY - 4, _invoiceW - 2 * _invoiceMargin, _invoiceLineH + 8), Paint()..color = black);
-      drawText(canvas, val, _invoiceMargin, bodyY, size: 16, color: const Color(0xFFFFFFFF), weight: FontWeight.bold);
+      // Top border
+      canvas.drawLine(Offset(_invoiceMargin, bodyY - 4), Offset(_invoiceW - _invoiceMargin, bodyY - 4), Paint()..color = accentColor..strokeWidth = 1.5);
+      canvas.drawRect(Rect.fromLTWH(_invoiceMargin, bodyY - 2, _invoiceW - 2 * _invoiceMargin, _invoiceLineH + 8), Paint()..color = lightBg);
+      drawText(canvas, val, _invoiceMargin, bodyY, size: 16, color: darkGray, weight: FontWeight.bold);
       bodyY += _invoiceLineH + 8;
+      // Bottom border
+      canvas.drawLine(Offset(_invoiceMargin, bodyY), Offset(_invoiceW - _invoiceMargin, bodyY), Paint()..color = accentColor..strokeWidth = 1.5);
       continue;
     }
     if (key == 'grand_amt') {
-      drawTextRight(canvas, val, infoX, bodyY - (_invoiceLineH + 8), size: 16, color: const Color(0xFFFFFFFF), weight: FontWeight.bold);
+      drawTextRight(canvas, val, infoX, bodyY - (_invoiceLineH + 8), size: 16, color: darkGray, weight: FontWeight.bold);
       continue;
     }
 
-    drawText(canvas, val, _invoiceMargin, bodyY, size: 12, color: black);
+    drawText(canvas, val, _invoiceMargin, bodyY, size: 12, color: darkGray);
     bodyY += _invoiceLineH;
   }
 
@@ -362,7 +367,7 @@ Future<Uint8List> generateQuoteImage(List<QuoteEntry> items, {BusinessInfo? busi
 
   // Footer
   if (s.showFooter && s.footerText.isNotEmpty) {
-    canvas.drawRect(Rect.fromLTWH(0, totalHeight - footerH, _invoiceW, footerH), Paint()..color = rule);
+    canvas.drawLine(Offset(_invoiceMargin, totalHeight - footerH), Offset(_invoiceW - _invoiceMargin, totalHeight - footerH), Paint()..color = rule..strokeWidth = 0.5);
     drawText(canvas, s.footerText, _invoiceMargin, totalHeight - footerH + 11, size: 10, color: muted);
   }
 
@@ -428,41 +433,45 @@ Future<Uint8List> generatePdfBytes(List<QuoteEntry> items, {InvoiceSettings? set
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(32),
-      header: (context) => pw.Container(
-        color: PdfColors.black,
-        padding: const pw.EdgeInsets.all(16),
-        child: pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('INVOICE',
-                  style: const pw.TextStyle(color: PdfColors.white, fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                pw.Text('SURVEY AIDE',
-                  style: const pw.TextStyle(color: PdfColors.grey400, fontSize: 10)),
-              ],
-            ),
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.end,
-              children: [
-                if (s.showInvoiceNumber)
-                  pw.Text('#$invNum',
-                    style: const pw.TextStyle(color: PdfColors.white, fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                pw.Text('Date: $invDate',
-                  style: const pw.TextStyle(color: PdfColors.grey400, fontSize: 10)),
-                if (s.showDueDate)
-                  pw.Text('Due: $dueDate',
-                    style: const pw.TextStyle(color: PdfColors.grey400, fontSize: 10)),
-              ],
-            ),
-          ],
-        ),
+      header: (context) => pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('INVOICE',
+                    style: const pw.TextStyle(color: PdfColor.fromInt(0xFF333333), fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('SURVEY AIDE',
+                    style: const pw.TextStyle(color: PdfColor.fromInt(0xFF888888), fontSize: 10)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  if (s.showInvoiceNumber)
+                    pw.Text('#$invNum',
+                      style: const pw.TextStyle(color: PdfColor.fromInt(0xFF333333), fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Date: $invDate',
+                    style: const pw.TextStyle(color: PdfColor.fromInt(0xFF888888), fontSize: 10)),
+                  if (s.showDueDate)
+                    pw.Text('Due: $dueDate',
+                      style: const pw.TextStyle(color: PdfColor.fromInt(0xFF888888), fontSize: 10)),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Divider(color: const PdfColor.fromInt(0xFFE8A06B), thickness: 2),
+        ],
       ),
       footer: s.showFooter && s.footerText.isNotEmpty
           ? (context) => pw.Container(
-              color: const PdfColor.fromInt(0xFFE0E0E0),
-              padding: const pw.EdgeInsets.all(8),
+              padding: const pw.EdgeInsets.only(top: 4),
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(top: pw.BorderSide(color: PdfColor.fromInt(0xFFE0E0E0), width: 0.5)),
+              ),
               child: pw.Text(s.footerText,
                 style: const pw.TextStyle(color: PdfColor.fromInt(0xFF666666), fontSize: 10)),
             )
@@ -613,15 +622,20 @@ Future<Uint8List> generatePdfBytes(List<QuoteEntry> items, {InvoiceSettings? set
         }
 
         content.add(pw.Container(
-          color: PdfColors.black,
-          padding: const pw.EdgeInsets.all(12),
+          padding: const pw.EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(
+              top: pw.BorderSide(color: PdfColor.fromInt(0xFFE8A06B), width: 1.5),
+              bottom: pw.BorderSide(color: PdfColor.fromInt(0xFFE8A06B), width: 1.5),
+            ),
+          ),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('TOTAL',
-                style: const pw.TextStyle(color: PdfColors.white, fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                style: const pw.TextStyle(color: PdfColor.fromInt(0xFF333333), fontSize: 18, fontWeight: pw.FontWeight.bold)),
               pw.Text(peso(grandTotal),
-                style: const pw.TextStyle(color: PdfColors.white, fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                style: const pw.TextStyle(color: PdfColor.fromInt(0xFF333333), fontSize: 18, fontWeight: pw.FontWeight.bold)),
             ],
           ),
         ));
