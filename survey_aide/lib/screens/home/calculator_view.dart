@@ -500,7 +500,6 @@ class _ServiceCardState extends State<_ServiceCard> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: AppTheme.rule.withValues(alpha: 0.6)),
         ),
         margin: const EdgeInsets.symmetric(vertical: 4),
         child: InkWell(

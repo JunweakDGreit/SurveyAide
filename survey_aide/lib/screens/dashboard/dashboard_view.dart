@@ -4,6 +4,7 @@ import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/uiprovider.dart';
+import '../settings/settings_sheet.dart';
 
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
@@ -34,22 +35,41 @@ class DashboardView extends ConsumerWidget {
               ),
             );
           },
-          child: isActive ? _buildContent(stats, theme) : const SizedBox.shrink(),
+          child: isActive ? _buildContent(context, stats, theme) : const SizedBox.shrink(),
         ),
       ),
     );
   }
 
-  Widget _buildContent(DashboardStats stats, ThemeData theme) {
+  Widget _buildContent(BuildContext context, DashboardStats stats, ThemeData theme) {
     return Column(
       key: const ValueKey('dashboard_content'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Dashboard', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(
-          'Overview of your surveying services',
-          style: theme.textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Dashboard', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Overview of your surveying services',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                  ),
+                ],
+              ),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              child: IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                tooltip: 'Settings',
+                onPressed: () => SettingsSheet.show(context),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         Row(
@@ -57,7 +77,6 @@ class DashboardView extends ConsumerWidget {
             Expanded(
               child: _ServicesCard(
                 stats: stats,
-                color: theme.colorScheme.primary,
                 theme: theme,
               ),
             ),
@@ -169,12 +188,10 @@ class DashboardView extends ConsumerWidget {
 
 class _ServicesCard extends StatelessWidget {
   final DashboardStats stats;
-  final Color color;
   final ThemeData theme;
 
   const _ServicesCard({
     required this.stats,
-    required this.color,
     required this.theme,
   });
 
@@ -191,16 +208,7 @@ class _ServicesCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.design_services_outlined, size: 22, color: color),
-            ),
-            const SizedBox(height: 12),
-            Text('Services', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+            Text('Services', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.65))),
             const SizedBox(height: 2),
             Text('$total', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
@@ -316,7 +324,7 @@ class _StatCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.65))),
                         const SizedBox(height: 2),
                         Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       ],
@@ -336,7 +344,7 @@ class _StatCard extends StatelessWidget {
                     child: Icon(icon, size: 22, color: color),
                   ),
                   const SizedBox(height: 12),
-                  Text(label, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                  Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.65))),
                   const SizedBox(height: 2),
                   Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 ],

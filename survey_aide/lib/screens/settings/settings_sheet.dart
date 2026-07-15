@@ -51,7 +51,6 @@ class SettingsSheet extends ConsumerStatefulWidget {
       container.read(settingsSheetOpenProvider.notifier).state = false;
       container.read(bottomSheetOpenProvider.notifier).state = false;
       container.read(modalCountProvider.notifier).state--;
-      container.read(setupProvider.notifier).reloadFromStorage();
     });
   }
 

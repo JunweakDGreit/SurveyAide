@@ -7,6 +7,7 @@ import '../../services/storage_service.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../providers/theme_provider.dart';
 import '../../core/theme_presets.dart';
+import '../settings/settings_sheet.dart';
 import 'traverse_screen.dart';
 
 class ToolsPage extends ConsumerStatefulWidget {
@@ -34,20 +35,25 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Survey Tools'),
-        actions: _tab == 0
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.folder_open_outlined),
-                  tooltip: 'Load',
-                  onPressed: () => _traverseKey.currentState?.triggerLoadDialog(),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.save_outlined),
-                  tooltip: 'Save',
-                  onPressed: () => _traverseKey.currentState?.triggerSave(),
-                ),
-              ]
-            : null,
+        actions: [
+          if (_tab == 0) ...[
+            IconButton(
+              icon: const Icon(Icons.folder_open_outlined),
+              tooltip: 'Load',
+              onPressed: () => _traverseKey.currentState?.triggerLoadDialog(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.save_outlined),
+              tooltip: 'Save',
+              onPressed: () => _traverseKey.currentState?.triggerSave(),
+            ),
+          ],
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => SettingsSheet.show(context),
+          ),
+        ],
       ),
       body: _tab == 1
           ? _buildHistory()
