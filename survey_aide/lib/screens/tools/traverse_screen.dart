@@ -106,6 +106,8 @@ class TraverseScreenState extends State<TraverseScreen> {
   double? _tieDistance;
   String? _crsFrom;
   String? _crsTo;
+  int? _prs92FromZone;
+  int? _prs92ToZone;
   bool _showResults = false;
   bool _processing = false;
   bool _showDetailedTable = false;
@@ -347,6 +349,8 @@ class TraverseScreenState extends State<TraverseScreen> {
 
     } else {
       // Geographic mode – convert lat/lon to target CRS, then area
+      final resolvedFrom =
+          _resolveCrsCode(_crsFrom, _prs92FromZone) ?? 'WGS84';
       final coords = <(double, double)>[];
       for (final point in _points) {
         final geo = _convertToDecimal(point);
@@ -354,7 +358,7 @@ class TraverseScreenState extends State<TraverseScreen> {
           final (lat, lon) = geo;
           try {
             final result = CrsService.instance.transform(
-              lon, lat, 'WGS84', _crsFrom ?? 'WGS84',
+              lon, lat, 'WGS84', resolvedFrom,
             );
             coords.add((result.$2, result.$1));
           } catch (_) {}
@@ -372,6 +376,26 @@ class TraverseScreenState extends State<TraverseScreen> {
     final lon = (p.lonDeg + p.lonMin / 60.0 + p.lonSec / 3600.0) *
         (p.lonEast ? 1.0 : -1.0);
     return (lat, lon);
+  }
+
+  String? _resolveCrsCode(String? simplified, int? zone) {
+    if (simplified == null) return null;
+    if (simplified == 'WGS84') return 'WGS84';
+
+    if (_mode == _InputMode.geographic && zone == null) {
+      final pt = _points.isNotEmpty ? _points[0] : null;
+      if (pt != null) {
+        final geo = _convertToDecimal(pt);
+        if (geo != null) {
+          final detected = CrsService.zoneFromLongitude(geo.$2);
+          if (detected != null) return 'PRS92_PTM_$detected';
+        }
+      }
+      return 'PRS92_GEO';
+    }
+
+    if (zone != null && zone >= 1 && zone <= 5) return 'PRS92_PTM_$zone';
+    return 'PRS92_GEO';
   }
 
   void _computeNeMode(List<(double, double)> coords) {
@@ -503,6 +527,10 @@ class TraverseScreenState extends State<TraverseScreen> {
       'tieDistance': _tieDistance,
       'startN': _startNCtrl.text,
       'startE': _startECtrl.text,
+      'crsFrom': _crsFrom,
+      'crsTo': _crsTo,
+      'prs92FromZone': _prs92FromZone,
+      'prs92ToZone': _prs92ToZone,
       'points': _points.map((p) => {
         'id': p.id,
         'northing': p.northing,
@@ -545,6 +573,8 @@ class TraverseScreenState extends State<TraverseScreen> {
       _mode = _InputMode.bd;
       _crsFrom = null;
       _crsTo = null;
+      _prs92FromZone = null;
+      _prs92ToZone = null;
       _hasTiePoint = false;
       _tieQuadrant = null;
       _tieBearingDeg = 0;
@@ -579,6 +609,10 @@ class TraverseScreenState extends State<TraverseScreen> {
       'tieDistance': _tieDistance,
       'startN': _startNCtrl.text,
       'startE': _startECtrl.text,
+      'crsFrom': _crsFrom,
+      'crsTo': _crsTo,
+      'prs92FromZone': _prs92FromZone,
+      'prs92ToZone': _prs92ToZone,
       'points': _points.map((p) => {
         'id': p.id,
         'northing': p.northing,
@@ -844,6 +878,10 @@ class TraverseScreenState extends State<TraverseScreen> {
     _tieDistance = (data['tieDistance'] as num?)?.toDouble();
     _startNCtrl.text = data['startN'] as String? ?? '';
     _startECtrl.text = data['startE'] as String? ?? '';
+    _crsFrom = data['crsFrom'] as String?;
+    _crsTo = data['crsTo'] as String?;
+    _prs92FromZone = data['prs92FromZone'] as int?;
+    _prs92ToZone = data['prs92ToZone'] as int?;
     final points = data['points'] as List? ?? [];
     _points.clear();
     _nextId = 1;
@@ -890,6 +928,8 @@ class TraverseScreenState extends State<TraverseScreen> {
 
   List<(double, double)> _getGridCoords() {
     if (_mode == _InputMode.geographic) {
+      final resolvedFrom =
+          _resolveCrsCode(_crsFrom, _prs92FromZone) ?? 'WGS84';
       final coords = <(double, double)>[];
       for (final pt in _points) {
         final geo = _convertToDecimal(pt);
@@ -897,7 +937,7 @@ class TraverseScreenState extends State<TraverseScreen> {
           final (lat, lon) = geo;
           try {
             final result = CrsService.instance.transform(
-              lon, lat, 'WGS84', _crsFrom ?? 'WGS84',
+              lon, lat, 'WGS84', resolvedFrom,
             );
             coords.add((result.$2, result.$1));
           } catch (_) {}
@@ -1118,49 +1158,139 @@ class TraverseScreenState extends State<TraverseScreen> {
   }
 
   Widget _buildCrsSelector(ThemeData theme) {
-    final allItems = [
+    final crsItems = [
       DropdownMenuItem<String?>(
         value: null,
         child: const Text('Local', style: TextStyle(fontSize: 11)),
       ),
-      ...CrsService.availableCrs.map((crs) => DropdownMenuItem<String?>(
-        value: crs.code,
-        child: Text(crs.label, style: const TextStyle(fontSize: 11)),
-      )),
+      const DropdownMenuItem(
+        value: 'WGS84',
+        child: Text('WGS84', style: TextStyle(fontSize: 11)),
+      ),
+      const DropdownMenuItem(
+        value: 'PRS92',
+        child: Text('PRS92', style: TextStyle(fontSize: 11)),
+      ),
     ];
-    return Row(
+
+    Widget zoneChips(int? selected, ValueChanged<int?> onChanged) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var z = 1; z <= 5; z++)
+            Padding(
+              padding: EdgeInsets.only(right: z < 5 ? 4 : 0),
+              child: ChoiceChip(
+                label: Text('$z', style: const TextStyle(fontSize: 10)),
+                selected: selected == z,
+                selectedColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.15),
+                onSelected: (sel) => onChanged(sel ? z : null),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+            ),
+        ],
+      );
+    }
+
+    final showFromZone =
+        _crsFrom == 'PRS92' && _mode != _InputMode.geographic;
+    final showToZone =
+        _crsTo == 'PRS92' && _mode != _InputMode.geographic;
+    final showAutoHint =
+        _mode == _InputMode.geographic &&
+        (_crsFrom == 'PRS92' || _crsTo == 'PRS92');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: InputDecorator(
-            decoration: glassInputDecoration(context,
-                labelText: 'CRS From', isDense: true),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: _crsFrom,
-                isDense: true,
-                isExpanded: true,
-                items: allItems,
-                onChanged: (v) => setState(() => _crsFrom = v),
+        Row(
+          children: [
+            Expanded(
+              child: InputDecorator(
+                decoration: glassInputDecoration(context,
+                    labelText: 'CRS From', isDense: true),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    value: _crsFrom,
+                    isDense: true,
+                    isExpanded: true,
+                    items: crsItems,
+                    onChanged: (v) => setState(() {
+                      _crsFrom = v;
+                      if (v != 'PRS92') _prs92FromZone = null;
+                    }),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: InputDecorator(
-            decoration: glassInputDecoration(context,
-                labelText: 'CRS To', isDense: true),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: _crsTo,
-                isDense: true,
-                isExpanded: true,
-                items: allItems,
-                onChanged: (v) => setState(() => _crsTo = v),
+            const SizedBox(width: 8),
+            Expanded(
+              child: InputDecorator(
+                decoration: glassInputDecoration(context,
+                    labelText: 'CRS To', isDense: true),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    value: _crsTo,
+                    isDense: true,
+                    isExpanded: true,
+                    items: crsItems,
+                    onChanged: (v) => setState(() {
+                      _crsTo = v;
+                      if (v != 'PRS92') _prs92ToZone = null;
+                    }),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
+        if (showFromZone) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              SizedBox(
+                width: 44,
+                child: Text('From:',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: AppTheme.muted)),
+              ),
+              zoneChips(
+                  _prs92FromZone, (v) => setState(() => _prs92FromZone = v)),
+            ],
+          ),
+        ],
+        if (showToZone) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              SizedBox(
+                width: 44,
+                child: Text('To:',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: AppTheme.muted)),
+              ),
+              zoneChips(
+                  _prs92ToZone, (v) => setState(() => _prs92ToZone = v)),
+            ],
+          ),
+        ],
+        if (showAutoHint)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome,
+                    size: 12, color: AppTheme.muted.withValues(alpha: 0.6)),
+                const SizedBox(width: 4),
+                Text('PTM zone auto-detected from longitude',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: AppTheme.muted)),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -2200,11 +2330,15 @@ class TraverseScreenState extends State<TraverseScreen> {
         : 'Traverse';
 
     if (!context.mounted) return;
+    final resolvedFrom =
+        _resolveCrsCode(_crsFrom, _prs92FromZone);
+    final resolvedTo =
+        _resolveCrsCode(_crsTo, _prs92ToZone);
     showComputeDialog(
       context,
       points: points,
-      crsFrom: _crsFrom,
-      crsTo: _crsTo,
+      crsFrom: resolvedFrom,
+      crsTo: resolvedTo,
       title: title,
     );
   }

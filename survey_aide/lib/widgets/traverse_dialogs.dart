@@ -173,13 +173,13 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
     ];
     if (_showSourceGeo) {
       columns.add(DataColumn(
-        label: Text(CrsService.labelFor(CrsService.geographicFor(widget.crsFrom!)),
+        label: Text(CrsService.displayLabelFor(CrsService.geographicFor(widget.crsFrom!)),
             style: const TextStyle(fontSize: 9)),
       ));
     }
     if (_showTargetGeo) {
       columns.add(DataColumn(
-        label: Text(CrsService.labelFor(CrsService.geographicFor(widget.crsTo!)),
+        label: Text(CrsService.displayLabelFor(CrsService.geographicFor(widget.crsTo!)),
             style: const TextStyle(fontSize: 9)),
       ));
     }
@@ -378,9 +378,9 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
     final from = widget.crsFrom;
     final to = widget.crsTo;
     if (from == null && to == null) return 'Local CRS';
-    if (to == null) return 'CRS: ${CrsService.labelFor(from!)}';
-    if (from == null) return 'CRS: Local → ${CrsService.labelFor(to)}';
-    return 'CRS: ${CrsService.labelFor(from)} → ${CrsService.labelFor(to)}';
+    if (to == null) return 'CRS: ${CrsService.displayLabelFor(from!)}';
+    if (from == null) return 'CRS: Local → ${CrsService.displayLabelFor(to)}';
+    return 'CRS: ${CrsService.displayLabelFor(from)} → ${CrsService.displayLabelFor(to)}';
   }
 
   void _copyResult(BuildContext context) {
@@ -392,10 +392,10 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
 
     buf.write('Corner\tNorthing\tEasting');
     if (_showSourceGeo) {
-      buf.write('\t${CrsService.labelFor(widget.crsFrom!)}');
+      buf.write('\t${CrsService.displayLabelFor(CrsService.geographicFor(widget.crsFrom!))}');
     }
     if (_showTargetGeo) {
-      buf.write('\t${CrsService.labelFor(widget.crsTo!)}');
+      buf.write('\t${CrsService.displayLabelFor(CrsService.geographicFor(widget.crsTo!))}');
     }
     buf.writeln('');
 

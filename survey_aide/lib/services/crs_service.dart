@@ -132,4 +132,29 @@ class CrsService {
     if (code.startsWith('PRS92_PTM_')) return 'PRS92_GEO';
     return code;
   }
+
+  static const _ptmZoneRanges = [
+    (zone: 1, lonMin: 116.0, lonMax: 118.0, cm: 117.0),
+    (zone: 2, lonMin: 118.0, lonMax: 120.0, cm: 119.0),
+    (zone: 3, lonMin: 120.0, lonMax: 122.0, cm: 121.0),
+    (zone: 4, lonMin: 122.0, lonMax: 124.0, cm: 123.0),
+    (zone: 5, lonMin: 124.0, lonMax: 126.0, cm: 125.0),
+  ];
+
+  static int? zoneFromLongitude(double lon) {
+    for (final z in _ptmZoneRanges) {
+      if (lon >= z.lonMin && lon < z.lonMax) return z.zone;
+    }
+    return null;
+  }
+
+  static String displayLabelFor(String code) {
+    if (code.startsWith('PRS92_PTM_')) {
+      final zone = code.substring(10);
+      return 'PRS92 (PTM Zone $zone)';
+    }
+    final found = findByCode(code);
+    if (found != null) return found.label;
+    return code;
+  }
 }
