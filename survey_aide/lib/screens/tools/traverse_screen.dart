@@ -349,6 +349,7 @@ class TraverseScreenState extends State<TraverseScreen> {
 
     } else {
       // Geographic mode – convert lat/lon to target CRS, then area
+      final sourceGeo = _crsFrom == 'PRS92' ? 'PRS92_GEO' : 'WGS84';
       final resolvedFrom =
           _resolveCrsCode(_crsFrom, _prs92FromZone) ?? 'WGS84';
       final coords = <(double, double)>[];
@@ -358,7 +359,7 @@ class TraverseScreenState extends State<TraverseScreen> {
           final (lat, lon) = geo;
           try {
             final result = CrsService.instance.transform(
-              lon, lat, 'WGS84', resolvedFrom,
+              lon, lat, sourceGeo, resolvedFrom,
             );
             coords.add((result.$2, result.$1));
           } catch (_) {}
@@ -928,6 +929,7 @@ class TraverseScreenState extends State<TraverseScreen> {
 
   List<(double, double)> _getGridCoords() {
     if (_mode == _InputMode.geographic) {
+      final sourceGeo = _crsFrom == 'PRS92' ? 'PRS92_GEO' : 'WGS84';
       final resolvedFrom =
           _resolveCrsCode(_crsFrom, _prs92FromZone) ?? 'WGS84';
       final coords = <(double, double)>[];
@@ -937,7 +939,7 @@ class TraverseScreenState extends State<TraverseScreen> {
           final (lat, lon) = geo;
           try {
             final result = CrsService.instance.transform(
-              lon, lat, 'WGS84', resolvedFrom,
+              lon, lat, sourceGeo, resolvedFrom,
             );
             coords.add((result.$2, result.$1));
           } catch (_) {}
