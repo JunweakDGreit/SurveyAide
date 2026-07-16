@@ -395,7 +395,7 @@ class TraverseScreenState extends State<TraverseScreen> {
     }
 
     if (zone != null && zone >= 1 && zone <= 5) return 'PRS92_PTM_$zone';
-    return 'PRS92_GEO';
+    return null;
   }
 
   void _computeNeMode(List<(double, double)> coords) {
@@ -1259,6 +1259,13 @@ class TraverseScreenState extends State<TraverseScreen> {
               ),
               zoneChips(
                   _prs92FromZone, (v) => setState(() => _prs92FromZone = v)),
+              if (_prs92FromZone == null) ...[
+                const SizedBox(width: 6),
+                Text('Select zone',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.error.withValues(alpha: 0.7),
+                        fontSize: 10)),
+              ],
             ],
           ),
         ],
@@ -1274,6 +1281,13 @@ class TraverseScreenState extends State<TraverseScreen> {
               ),
               zoneChips(
                   _prs92ToZone, (v) => setState(() => _prs92ToZone = v)),
+              if (_prs92ToZone == null) ...[
+                const SizedBox(width: 6),
+                Text('Select zone',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.error.withValues(alpha: 0.7),
+                        fontSize: 10)),
+              ],
             ],
           ),
         ],
@@ -2334,6 +2348,18 @@ class TraverseScreenState extends State<TraverseScreen> {
         _resolveCrsCode(_crsFrom, _prs92FromZone);
     final resolvedTo =
         _resolveCrsCode(_crsTo, _prs92ToZone);
+
+    if (_crsFrom == 'PRS92' && _prs92FromZone == null &&
+        _mode != _InputMode.geographic) {
+      showToast(context, 'Select a PTM zone for CRS From');
+      return;
+    }
+    if (_crsTo == 'PRS92' && _prs92ToZone == null &&
+        _mode != _InputMode.geographic) {
+      showToast(context, 'Select a PTM zone for CRS To');
+      return;
+    }
+
     showComputeDialog(
       context,
       points: points,
