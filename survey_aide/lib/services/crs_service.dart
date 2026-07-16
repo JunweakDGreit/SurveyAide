@@ -150,8 +150,7 @@ class CrsService {
 
   static String displayLabelFor(String code) {
     if (code.startsWith('PRS92_PTM_')) {
-      final zone = code.substring(10);
-      return 'PRS92 (PTM Zone $zone)';
+      return 'PRS92';
     }
     final found = findByCode(code);
     if (found != null) return found.label;
