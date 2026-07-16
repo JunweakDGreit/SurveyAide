@@ -20,12 +20,12 @@ class CrsService {
   static final List<RegisteredCrs> _crsList = [
     const RegisteredCrs(
       code: 'WGS84',
-      label: 'WGS84 (Geographic)',
+      label: 'WGS84',
       isProjected: false,
     ),
     const RegisteredCrs(
       code: 'PRS92_GEO',
-      label: 'PRS92 Geographic (Clarke 1866)',
+      label: 'PRS92',
       isProjected: false,
     ),
     const RegisteredCrs(
