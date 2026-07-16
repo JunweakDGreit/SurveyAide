@@ -99,9 +99,9 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
         }
 
         if (_showTargetGeo) {
-          final from = widget.crsFrom ?? 'WGS84';
+          final sourceCrs = widget.crsFrom ?? 'WGS84';
           final proj = CrsService.instance.transform(
-              pt.easting, pt.northing, from, widget.crsTo!);
+              pt.easting, pt.northing, sourceCrs, widget.crsTo!);
           final geo = CrsService.instance.transform(
               proj.$1, proj.$2, widget.crsTo!,
               CrsService.geographicFor(widget.crsTo!));
