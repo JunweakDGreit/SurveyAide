@@ -64,6 +64,7 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
   String? _error;
   List<_ComputeRow> _rows = [];
   LotDataResult? _areaResult;
+  final _horizontalCtrl = ScrollController();
 
   bool get _showSourceGeo => widget.crsFrom != null;
   bool get _showTargetGeo => widget.crsTo != null;
@@ -72,6 +73,12 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
   void initState() {
     super.initState();
     _computeAll();
+  }
+
+  @override
+  void dispose() {
+    _horizontalCtrl.dispose();
+    super.dispose();
   }
 
   void _computeAll() {
@@ -86,7 +93,8 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
 
         if (_showSourceGeo) {
           final geo = CrsService.instance.transform(
-              pt.easting, pt.northing, widget.crsFrom!, 'WGS84');
+              pt.easting, pt.northing, widget.crsFrom!,
+              CrsService.geographicFor(widget.crsFrom!));
           sourceStr = _formatGeo(geo.$2, geo.$1, fmt);
         }
 
@@ -95,7 +103,8 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
           final proj = CrsService.instance.transform(
               pt.easting, pt.northing, from, widget.crsTo!);
           final geo = CrsService.instance.transform(
-              proj.$1, proj.$2, widget.crsTo!, 'WGS84');
+              proj.$1, proj.$2, widget.crsTo!,
+              CrsService.geographicFor(widget.crsTo!));
           targetStr = _formatGeo(geo.$2, geo.$1, fmt);
         }
 
@@ -164,13 +173,13 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
     ];
     if (_showSourceGeo) {
       columns.add(DataColumn(
-        label: Text(CrsService.labelFor(widget.crsFrom!),
+        label: Text(CrsService.labelFor(CrsService.geographicFor(widget.crsFrom!)),
             style: const TextStyle(fontSize: 9)),
       ));
     }
     if (_showTargetGeo) {
       columns.add(DataColumn(
-        label: Text(CrsService.labelFor(widget.crsTo!),
+        label: Text(CrsService.labelFor(CrsService.geographicFor(widget.crsTo!)),
             style: const TextStyle(fontSize: 9)),
       ));
     }
@@ -218,39 +227,31 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
           const SizedBox(height: 8),
 
           // Controls
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 120,
-                  child: SegmentedButton<_GeoFormat>(
-                    segments: const [
-                      ButtonSegment(
-                        value: _GeoFormat.dms,
-                        label:
-                            Text('DMS', style: TextStyle(fontSize: 10)),
-                      ),
-                      ButtonSegment(
-                        value: _GeoFormat.decimal,
-                        label:
-                            Text('DD', style: TextStyle(fontSize: 10)),
-                      ),
-                    ],
-                    selected: {_geoFormat},
-                    onSelectionChanged: (v) => setState(() {
-                      _geoFormat = v.first;
-                      _computeAll();
-                    }),
-                    style: ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+          if (_showSourceGeo || _showTargetGeo)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SegmentedButton<_GeoFormat>(
+                segments: const [
+                  ButtonSegment(
+                    value: _GeoFormat.dms,
+                    label: Text('DMS', style: TextStyle(fontSize: 11)),
                   ),
+                  ButtonSegment(
+                    value: _GeoFormat.decimal,
+                    label: Text('DD', style: TextStyle(fontSize: 11)),
+                  ),
+                ],
+                selected: {_geoFormat},
+                onSelectionChanged: (v) => setState(() {
+                  _geoFormat = v.first;
+                  _computeAll();
+                }),
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              ],
+              ),
             ),
-          ),
           const SizedBox(height: 12),
 
           if (_loading)
@@ -268,11 +269,14 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
             )
           else
             Flexible(
-              child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12),
-                scrollDirection: Axis.horizontal,
+              child: Scrollbar(
+                controller: _horizontalCtrl,
                 child: SingleChildScrollView(
+                  controller: _horizontalCtrl,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12),
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
@@ -349,6 +353,7 @@ class _ComputeDialogContentState extends State<_ComputeDialogContent> {
                   ),
                 ),
               ),
+            ),
             ),
           const SizedBox(height: 12),
           Padding(

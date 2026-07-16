@@ -486,6 +486,7 @@ class TraverseScreenState extends State<TraverseScreen> {
       'name': _traverseNameCtrl.text.isNotEmpty ? _traverseNameCtrl.text : 'Traverse ${DateTime.now().toLocal().toString().split(' ')[0]}',
       'date': DateTime.now().toIso8601String(),
       'mode': _mode.name,
+      'adjustmentMethod': _adjustmentMethod,
       'precision': result?.relativePrecision,
       'method': adjust?.method ?? 'None',
       'areaHa': area?.areaHectares,
@@ -569,6 +570,7 @@ class TraverseScreenState extends State<TraverseScreen> {
     final data = {
       'name': _traverseNameCtrl.text,
       'mode': _mode.name,
+      'adjustmentMethod': _adjustmentMethod,
       'hasTiePoint': _hasTiePoint,
       'tieQuadrant': _tieQuadrant?.name,
       'tieBearingDeg': _tieBearingDeg,
@@ -829,6 +831,9 @@ class TraverseScreenState extends State<TraverseScreen> {
     _traverseNameCtrl.text = data['name'] as String? ?? '';
     _mode = _InputMode.values.firstWhere(
         (e) => e.name == data['mode'], orElse: () => _InputMode.bd);
+    if (data['adjustmentMethod'] is String) {
+      _adjustmentMethod = data['adjustmentMethod'] as String;
+    }
     _hasTiePoint = data['hasTiePoint'] as bool? ?? false;
     _tieQuadrant = data['tieQuadrant'] != null
         ? Quadrant.values.byName(data['tieQuadrant'] as String)
@@ -998,6 +1003,38 @@ class TraverseScreenState extends State<TraverseScreen> {
             _buildPointEntries(theme),
             const SizedBox(height: 12),
             _buildAddButton(theme),
+            if (_mode == _InputMode.bd) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text('Adjustment:',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.65))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(
+                            value: 'Compass Rule',
+                            label: Text('Compass',
+                                style: TextStyle(fontSize: 12))),
+                        ButtonSegment(
+                            value: 'Transit Rule',
+                            label: Text('Transit',
+                                style: TextStyle(fontSize: 12))),
+                      ],
+                      selected: {_adjustmentMethod},
+                      onSelectionChanged: (v) =>
+                          setState(() => _adjustmentMethod = v.first),
+                      style: const ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             _buildComputeButton(theme),
             if (widget.embedded) ...[
@@ -2176,4 +2213,9 @@ class TraverseScreenState extends State<TraverseScreen> {
   void triggerLoadDialog() => _showLoadDialog();
   Future<void> triggerSave() => _saveToStorage();
   void triggerClear() => _clearAll();
+
+  void loadFromData(Map<String, dynamic> data) {
+    _loadFromData(data);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _compute());
+  }
 }

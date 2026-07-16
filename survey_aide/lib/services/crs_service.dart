@@ -56,7 +56,7 @@ class CrsService {
   ];
 
   static const _towgs84Clarke =
-      '-127.62,-67.24,-47.04,-3.068,4.903,1.578,-1.06';
+      '-127.62,-67.24,-47.04,3.068,4.903,1.578,-1.06';
 
   static List<RegisteredCrs> get availableCrs => List.unmodifiable(_crsList);
 
@@ -125,6 +125,11 @@ class CrsService {
     if (found != null) return found.label;
     final codeNum = code.replaceAll(RegExp(r'[^0-9]'), '');
     if (codeNum.isNotEmpty) return 'EPSG:$codeNum';
+    return code;
+  }
+
+  static String geographicFor(String code) {
+    if (code.startsWith('PRS92_PTM_')) return 'PRS92_GEO';
     return code;
   }
 }

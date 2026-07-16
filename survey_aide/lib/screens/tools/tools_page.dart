@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:animations/animations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../services/storage_service.dart';
@@ -55,9 +54,13 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
           ),
         ],
       ),
-      body: _tab == 1
-          ? _buildHistory()
-          : TraverseScreen(key: _traverseKey, embedded: true),
+      body: IndexedStack(
+        index: _tab,
+        children: [
+          TraverseScreen(key: _traverseKey, embedded: true),
+          _buildHistory(),
+        ],
+      ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
         child: glassBackdrop(
@@ -120,18 +123,20 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
     final areaSqm = item['areaSqm'] as num?;
     final method = item['method'] as String? ?? '';
 
-    return OpenContainer(
-      closedColor: Colors.transparent,
-      closedElevation: 0,
-      openElevation: 0,
-      closedBuilder: (_, action) => Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        shadowColor: Colors.black.withValues(alpha: 0.08),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        color: Theme.of(context).colorScheme.surface,
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: Theme.of(context).colorScheme.surface,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          _traverseKey.currentState?.loadFromData(item);
+          setState(() => _tab = 0);
+        },
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -183,7 +188,6 @@ class _ToolsPageState extends ConsumerState<ToolsPage> {
           ),
         ),
       ),
-      openBuilder: (_, action) => TraverseScreen(initialData: item),
     );
   }
 
